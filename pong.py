@@ -13,11 +13,19 @@ class Padel:
         self.px = px
         self.size = size
         self.vy = 0
+        self.vdecay = 0.7
 
     def update(self, direction):
         self.draw(0)
         self.py += direction
-        self.vy = direction
+        if direction == 0:
+            self.vy = self.vy * self.vdecay
+            if abs(self.vy) < 0.2:
+                self.vy = 0
+        else:
+            self.vy = direction
+            self.vdecay = 0.7
+
         if self.py < 0:
             self.py = 0
         if (32 - self.size) < self.py:
@@ -51,26 +59,14 @@ class Ball:
         self.ey = 0
         self.ex = 0
 
-    def inline_padel(self, padel):
-        return padel.py <= self.py and self.py <= (padel.py + padel.size - 1)
+    def inline_padel(self, padel, extend=0):
+        return padel.py - extend <= self.py and self.py <= (padel.py + padel.size - 1) + extend
 
     def update(self):
         global running
 
         old_py = self.py
         old_px = self.px
-
-        if self.inline_padel(leftpadel) and (leftpadel.px + 1) == round(self.px):
-            self.vx = -self.vx
-            if leftpadel.vy != 0:
-                self.vy = max(-0.8, min(0.8, (leftpadel.vy * 0.3 + self.vy)))
-                self.vx = max(-0.8, min(0.8, math.sqrt(1 - self.vy**2)))
-
-        if self.inline_padel(rightpadel) and (rightpadel.px - 1) == round(self.px):
-            self.vx = -self.vx
-            if rightpadel.vy != 0:
-                self.vy = max(-0.8, min(0.8, (rightpadel.vy * 0.3 + self.vy)))
-                self.vx = max(-0.8, min(0.8, math.sqrt(1 - self.vy**2)))
 
         self.ey += abs(self.vy)
         self.ex += abs(self.vx)
@@ -95,24 +91,46 @@ class Ball:
             self.vx = -self.vx
             framebuf[self.py][self.px] = 0
             framebuf[old_py][old_px] = 0
-            running = False
-            return -1
+            return 1
         if self.px <= 0:
             self.px = 0
             self.vx = -self.vx
             framebuf[self.py][self.px] = 0
             framebuf[old_py][old_px] = 0
-            running = False
-            return -1
+            return 2
+
+        if self.inline_padel(leftpadel, extend=1) and self.px <= (leftpadel.px + 1) and self.vx < 0 and leftpadel.px <= self.px:
+            self.vx = abs(self.vx)
+            self.px = leftpadel.px + 1
+            if leftpadel.vy != 0:
+                self.vy = max(-0.8, min(0.8, (leftpadel.vy * 0.3 + self.vy)))
+                #self.vx = max(-0.8, min(0.8, math.sqrt(1 - self.vy**2)))
+                speed = math.sqrt(self.vx**2 + self.vy**2)
+                if speed > 0:
+                    self.vx = (self.vx / speed) * 1.0
+                    self.vy = (self.vy / speed) * 1.0
+
+        if self.inline_padel(rightpadel, extend=1) and (rightpadel.px - 1) <= self.px and 0 < self.vx and self.px <= rightpadel.px:
+            self.vx = -abs(self.vx)
+            print("inverted")
+            self.px = rightpadel.px - 1
+            if rightpadel.vy != 0:
+                self.vy = max(-0.8, min(0.8, (rightpadel.vy * 0.3 + self.vy)))
+            #               self.vx = max(-0.8, min(0.8, math.sqrt(1 - self.vy**2)))
+                speed = math.sqrt(self.vx**2 + self.vy**2)
+                if speed > 0:
+                    self.vx = (self.vx / speed) * 1.0
+                    self.vy = (self.vy / speed) * 1.0
+
         return 0
 
 ball = Ball()
-ERROR_CHANCE = 0.5
+ERROR_CHANCE = 0.3
 
 def get_ai_direction(padel):
-    if (random.random() < 0.3):
+    if (random.random() < 0.2):
         return 0
-    if (random.random() < 0.1):
+    if (random.random() < 0.05):
         return random.choice([-1, 0, 1])
 
     t = ball.py + random.uniform(-ERROR_CHANCE, ERROR_CHANCE)
@@ -123,20 +141,23 @@ def get_ai_direction(padel):
     else:
         return 1
 
-def update():
-    ldir = get_ai_direction(leftpadel)
-    rdir = get_ai_direction(rightpadel)
+def update(ldir, rdir):
     leftpadel.update(ldir)
     rightpadel.update(rdir)
-    print(ldir)
-    print(rdir)
+    print("L:", ldir, "R:", rdir)
 
     if (ball.inline_padel(leftpadel) or ball.inline_padel(rightpadel)) and ((ball.px == leftpadel.px) or (ball.px == rightpadel.px)):
         framebuf[ball.py][ball.px] = 1
     else:
         framebuf[ball.py][ball.px] = 0
-    if ball.update() == 0:
+
+    r = ball.update()
+    if r == 0:
         framebuf[ball.py][ball.px] = 1
+    else:
+        return r
+
+    return 0
 
 pygame.init()
 screen = pygame.display.set_mode((640, 320))
@@ -155,6 +176,10 @@ def start():
     leftpadel.draw(1)
     rightpadel.draw(1)
     running = True
+    r = 0
+
+    ldir = 0
+    rdir = 0
 
     while running:
         # poll for events
@@ -175,13 +200,22 @@ def start():
         # flip() the display to put your work on screen
         pygame.display.flip()
 
-        update()
+        print(framebuf, ldir, rdir, math.sqrt(ball.vx**2 + ball.vy**2), ball.vx, ball.vy, r)
+
+        ldir = get_ai_direction(leftpadel)
+        rdir = get_ai_direction(rightpadel)
+
+        r = update(ldir, rdir)
+        if r != 0:
+            print(framebuf, ldir, rdir, r)
+            running = False
 
         clock.tick(30)  # limits FPS to 60
 
 if __name__ == '__main__':
     while True:
         start()
+        print("new game")
         time.sleep(1)
 
 pygame.quit()
