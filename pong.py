@@ -2,6 +2,7 @@ import pygame
 import torch
 import random
 import math
+import time
 
 framebuf = torch.zeros((32, 64))
 running = True
@@ -43,6 +44,7 @@ class Ball:
         self.vy = speed * math.sin(angle)
 
         while (0.8 < self.vx) or (0.8 < self.vy) or self.vx == 0 or self.vy == 0:
+            angle = random.randint(-60, 60) * (math.pi / 180)
             self.vx = random.choice([-1, 1]) * speed * math.cos(angle)
             self.vy = speed * math.sin(angle)
 
@@ -54,6 +56,9 @@ class Ball:
 
     def update(self):
         global running
+
+        old_py = self.py
+        old_px = self.px
 
         if self.inline_padel(leftpadel) and (leftpadel.px + 1) == round(self.px):
             self.vx = -self.vx
@@ -88,11 +93,18 @@ class Ball:
         if self.px >= 63:
             self.px = 63
             self.vx = -self.vx
+            framebuf[self.py][self.px] = 0
+            framebuf[old_py][old_px] = 0
             running = False
+            return -1
         if self.px <= 0:
             self.px = 0
             self.vx = -self.vx
+            framebuf[self.py][self.px] = 0
+            framebuf[old_py][old_px] = 0
             running = False
+            return -1
+        return 0
 
 ball = Ball()
 ERROR_CHANCE = 0.5
@@ -119,12 +131,12 @@ def update():
     print(ldir)
     print(rdir)
 
-    if (ball.inline_padel(leftpadel) or ball.inline_padel(rightpadel)) and (ball.px == leftpadel.px) or (ball.px == rightpadel.px):
+    if (ball.inline_padel(leftpadel) or ball.inline_padel(rightpadel)) and ((ball.px == leftpadel.px) or (ball.px == rightpadel.px)):
         framebuf[ball.py][ball.px] = 1
     else:
         framebuf[ball.py][ball.px] = 0
-    ball.update()
-    framebuf[ball.py][ball.px] = 1
+    if ball.update() == 0:
+        framebuf[ball.py][ball.px] = 1
 
 pygame.init()
 screen = pygame.display.set_mode((640, 320))
@@ -168,7 +180,9 @@ def start():
         clock.tick(30)  # limits FPS to 60
 
 if __name__ == '__main__':
-    start()
+    while True:
+        start()
+        time.sleep(1)
 
 pygame.quit()
 
