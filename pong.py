@@ -104,7 +104,6 @@ class Ball:
             self.px = leftpadel.px + 1
             if leftpadel.vy != 0:
                 self.vy = max(-0.8, min(0.8, (leftpadel.vy * 0.3 + self.vy)))
-                #self.vx = max(-0.8, min(0.8, math.sqrt(1 - self.vy**2)))
                 speed = math.sqrt(self.vx**2 + self.vy**2)
                 if speed > 0:
                     self.vx = (self.vx / speed) * 1.0
@@ -116,7 +115,6 @@ class Ball:
             self.px = rightpadel.px - 1
             if rightpadel.vy != 0:
                 self.vy = max(-0.8, min(0.8, (rightpadel.vy * 0.3 + self.vy)))
-            #               self.vx = max(-0.8, min(0.8, math.sqrt(1 - self.vy**2)))
                 speed = math.sqrt(self.vx**2 + self.vy**2)
                 if speed > 0:
                     self.vx = (self.vx / speed) * 1.0
@@ -146,7 +144,7 @@ def update(ldir, rdir):
     rightpadel.update(rdir)
     print("L:", ldir, "R:", rdir)
 
-    if (ball.inline_padel(leftpadel) or ball.inline_padel(rightpadel)) and ((ball.px == leftpadel.px) or (ball.px == rightpadel.px)):
+    if (ball.inline_padel(leftpadel) and (ball.px == leftpadel.px)) or (ball.inline_padel(rightpadel) and (ball.px == rightpadel.px)):
         framebuf[ball.py][ball.px] = 1
     else:
         framebuf[ball.py][ball.px] = 0
