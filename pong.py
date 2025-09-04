@@ -1,4 +1,4 @@
-import pygame
+#import pygame
 import torch
 import random
 import math
@@ -155,22 +155,59 @@ def update(ldir, rdir):
 
     return 0
 
-pygame.init()
-screen = pygame.display.set_mode((640, 320))
-clock = pygame.time.Clock()
-wsquare = pygame.Surface((10, 10))
-wsquare.fill((255, 255, 255))
-bsquare = pygame.Surface((10, 10))
-bsquare.fill((0, 0, 0))
+#pygame.init()
+#screen = pygame.display.set_mode((640, 320))
+#clock = pygame.time.Clock()
+#wsquare = pygame.Surface((10, 10))
+#wsquare.fill((255, 255, 255))
+#bsquare = pygame.Surface((10, 10))
+#bsquare.fill((0, 0, 0))
+
+class Recorder:
+    def __init__(self):
+        self.current_sequence = []
+        self.sequences = []
+        self.sequence_max_frames = 50
+        self.all_frames = 0
+    
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, idx):
+        return self.sequences[idx]
+
+    def record_frame(self, frame, inputleft, inputright, result):
+        global running
+
+        self.current_sequence.append({
+            "frame": frame.clone().detach(),
+            "inputleft": inputleft,
+            "inputright": inputright,
+            "result": result
+        })
+
+        self.all_frames += 1
+
+        if result != 0 or self.sequence_max_frames < len(self.current_sequence):
+            self.sequences.append(self.current_sequence)
+            self.current_sequence = []
+
+            running = False
+
+    def save_dataset(self, filename="pongdata.pt"):
+        pass
+
+recorder = Recorder()
 
 def start():
-    global framebuf, ball, leftpadel, rightpadel, running
+    global framebuf, ball, leftpadel, rightpadel, running, recorder
     framebuf = torch.zeros((32, 64))
     ball = Ball()
-    leftpadel = Padel(random.randint(0, 27), 2, 5)
-    rightpadel = Padel(random.randint(0, 27), 61, 5)
+    leftpadel = Padel(14, 2, 5)
+    rightpadel = Padel(14, 61, 5)
     leftpadel.draw(1)
     rightpadel.draw(1)
+    framebuf[ball.py][ball.px] = 1
     running = True
     r = 0
 
@@ -178,20 +215,22 @@ def start():
     rdir = 0
 
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        recorder.record_frame(framebuf, leftpadel, rightpadel, r)
 
-        for i in range(32):
-            for j in range(64):
-                if framebuf[i][j] == 1:
-                    rect = pygame.Rect(j * 10, i * 10, 10, 10)
-                    screen.blit(wsquare, rect)
-                else:
-                    rect = pygame.Rect(j * 10, i * 10, 10, 10)
-                    screen.blit(bsquare, rect)
+        #for event in pygame.event.get():
+        #    if event.type == pygame.QUIT:
+        #        running = False
 
-        pygame.display.flip()
+        #for i in range(32):
+        #    for j in range(64):
+        #        if framebuf[i][j] == 1:
+        #            rect = pygame.Rect(j * 10, i * 10, 10, 10)
+        #            screen.blit(wsquare, rect)
+        #        else:
+        #            rect = pygame.Rect(j * 10, i * 10, 10, 10)
+        #            screen.blit(bsquare, rect)
+
+        #pygame.display.flip()
 
         ldir = get_ai_direction(leftpadel)
         rdir = get_ai_direction(rightpadel)
@@ -200,37 +239,16 @@ def start():
         if r != 0:
             running = False
 
-        clock.tick(30)
+        #clock.tick(30)
 
 if __name__ == '__main__':
-    while True:
+    while recorder.all_frames < 50000:
         start()
-        print("new game")
+        if len(recorder.sequences) % 20 == 0:
+            print("new game; sequences:", str(len(recorder.sequences)) + "; all frames:", recorder.all_frames)
         time.sleep(1)
 
-class Recorder:
-    def __init__(self):
-        self.current_sequence = []
-        self.sequences = []
-        self.sequence_max_frames = 50
-    
-    def __len__(self):
-        return len(self.sequences)
 
-    def __getitem__(self, idx):
-        return self.sequences[idx]
 
-    def record_frame(frame, inputleft, inputright, result):
-        self.current_sequence.append({
-            "frame": frame,
-            "inputleft": inputleft,
-            "inputright": inputright,
-            "result": result
-        })
-
-        if result != 0 or self.sequence_max_frames < len(self.current_sequence):
-            self.sequences.append(self.current_sequence)
-            self.current_sequence = []
-
-pygame.quit()
+#pygame.quit()
 
