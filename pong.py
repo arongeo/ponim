@@ -111,7 +111,6 @@ class Ball:
 
         if self.inline_padel(rightpadel, extend=1) and (rightpadel.px - 1) <= self.px and 0 < self.vx and self.px <= rightpadel.px:
             self.vx = -abs(self.vx)
-            print("inverted")
             self.px = rightpadel.px - 1
             if rightpadel.vy != 0:
                 self.vy = max(-0.8, min(0.8, (rightpadel.vy * 0.3 + self.vy)))
@@ -142,7 +141,6 @@ def get_ai_direction(padel):
 def update(ldir, rdir):
     leftpadel.update(ldir)
     rightpadel.update(rdir)
-    print("L:", ldir, "R:", rdir)
 
     if (ball.inline_padel(leftpadel) and (ball.px == leftpadel.px)) or (ball.inline_padel(rightpadel) and (ball.px == rightpadel.px)):
         framebuf[ball.py][ball.px] = 1
@@ -180,8 +178,6 @@ def start():
     rdir = 0
 
     while running:
-        # poll for events
-        # pygame.QUIT event means the user clicked X to close your window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -195,26 +191,46 @@ def start():
                     rect = pygame.Rect(j * 10, i * 10, 10, 10)
                     screen.blit(bsquare, rect)
 
-        # flip() the display to put your work on screen
         pygame.display.flip()
-
-        print(framebuf, ldir, rdir, math.sqrt(ball.vx**2 + ball.vy**2), ball.vx, ball.vy, r)
 
         ldir = get_ai_direction(leftpadel)
         rdir = get_ai_direction(rightpadel)
 
         r = update(ldir, rdir)
         if r != 0:
-            print(framebuf, ldir, rdir, r)
             running = False
 
-        clock.tick(30)  # limits FPS to 60
+        clock.tick(30)
 
 if __name__ == '__main__':
     while True:
         start()
         print("new game")
         time.sleep(1)
+
+class Recorder:
+    def __init__(self):
+        self.current_sequence = []
+        self.sequences = []
+        self.sequence_max_frames = 50
+    
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, idx):
+        return self.sequences[idx]
+
+    def record_frame(frame, inputleft, inputright, result):
+        self.current_sequence.append({
+            "frame": frame,
+            "inputleft": inputleft,
+            "inputright": inputright,
+            "result": result
+        })
+
+        if result != 0 or self.sequence_max_frames < len(self.current_sequence):
+            self.sequences.append(self.current_sequence)
+            self.current_sequence = []
 
 pygame.quit()
 
