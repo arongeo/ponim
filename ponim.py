@@ -86,14 +86,17 @@ class VAE(nn.Module):
         # Works, and can backpropagate through this cause in calculus:
         # f(x) = c * g(x)
         # f'(x) = c * g'(x)
-        # Aka, constant multiplication stays, and the gradient for f'(x) in relation to g'(x) is always c
-        # so no matter what c is, it's c, thus we can ignore it (actually we can't, cause of what I'm saying later,
-        # but the random epsilons all around should mostly cancel out), during backprop, aka calculating gradients
-        # Since the gradient of std is eps, aka the change in the loss in relation to std is eps, 
-        # we might say we still account of randomness, and we kinda do, but the reason why we do this, 
-        # (I've been pondering about this for a while) isn't actually to help make the reconstruction better,
-        # if we'd only care about the reconstruction, we'd just train a normal autoencoder, we do it to align
-        # our learned distibutions' mean and std to a N(0, 1) normal distribution
+        # Aka, constant multiplication stays, and the gradient for f'(x)
+        # in relation to g'(x) is always c so no matter what c is, it's c,
+        # thus we can ignore it (actually we can't, cause of what I'm saying later,
+        # but the random epsilons all around should mostly cancel out), during backprop,
+        # aka calculating gradients
+        # Since the gradient of std is eps, aka the change in the loss in relation 
+        # to std is eps, we might say we still account of randomness, and we kinda do, 
+        # but the reason why we do this, (I've been pondering about this for a while) isn't 
+        # actually to help make the reconstruction better, if we'd only care about the 
+        # reconstruction, we'd just train a normal autoencoder, instead we do it to align our
+        # learned distibutions' mean and std to a N(0, 1) normal distribution
 
         return mean + std * eps
 
