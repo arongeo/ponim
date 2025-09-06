@@ -1,4 +1,3 @@
-#import pygame
 import torch
 import random
 import math
@@ -155,20 +154,14 @@ def update(ldir, rdir):
 
     return 0
 
-#pygame.init()
-#screen = pygame.display.set_mode((640, 320))
-#clock = pygame.time.Clock()
-#wsquare = pygame.Surface((10, 10))
-#wsquare.fill((255, 255, 255))
-#bsquare = pygame.Surface((10, 10))
-#bsquare.fill((0, 0, 0))
-
 class Recorder:
     def __init__(self):
         self.current_sequence = []
         self.sequences = []
         self.sequence_max_frames = 50
+        self.current_sequence_frame_count = 0
         self.all_frames = 0
+        self.sequences_with_results = 0
     
     def __len__(self):
         return len(self.sequences)
@@ -186,16 +179,31 @@ class Recorder:
             "result": result
         })
 
-        self.all_frames += 1
+        self.current_sequence_frame_count += 1
 
         if result != 0 or self.sequence_max_frames < len(self.current_sequence):
-            self.sequences.append(self.current_sequence)
-            self.current_sequence = []
+            if len(self.current_sequence) < 5:
+                self.current_sequence = []
+                return
 
+            if result != 0:
+                self.sequences_with_results += 1
+
+            self.all_frames += self.current_sequence_frame_count
+            self.current_sequence_frame_count = 0
+
+            self.sequences.append({
+                "frames": torch.stack([s["frame"] for s in self.current_sequence]),
+                "actions": torch.tensor([[s["inputleft"], s["inputright"]]
+                                         for s in self.current_sequence], dtype=torch.float32),
+                "results": torch.tensor([s["result"] for s in self.current_sequence], dtype=torch.long)
+            })
+
+            self.current_sequence = []
             running = False
 
     def save_dataset(self, filename="pongdata.pt"):
-        pass
+        torch.save(self.sequences, filename)       
 
 recorder = Recorder()
 
@@ -215,40 +223,17 @@ def start():
     rdir = 0
 
     while running:
-        recorder.record_frame(framebuf, leftpadel, rightpadel, r)
-
-        #for event in pygame.event.get():
-        #    if event.type == pygame.QUIT:
-        #        running = False
-
-        #for i in range(32):
-        #    for j in range(64):
-        #        if framebuf[i][j] == 1:
-        #            rect = pygame.Rect(j * 10, i * 10, 10, 10)
-        #            screen.blit(wsquare, rect)
-        #        else:
-        #            rect = pygame.Rect(j * 10, i * 10, 10, 10)
-        #            screen.blit(bsquare, rect)
-
-        #pygame.display.flip()
+        recorder.record_frame(framebuf, ldir, rdir, r)
 
         ldir = get_ai_direction(leftpadel)
         rdir = get_ai_direction(rightpadel)
 
         r = update(ldir, rdir)
-        if r != 0:
-            running = False
-
-        #clock.tick(30)
 
 if __name__ == '__main__':
-    while recorder.all_frames < 50000:
+    while recorder.all_frames < 150000:
         start()
         if len(recorder.sequences) % 20 == 0:
-            print("new game; sequences:", str(len(recorder.sequences)) + "; all frames:", recorder.all_frames)
-        time.sleep(1)
-
-
-
-#pygame.quit()
+            print("new game; sequences:", str(len(recorder.sequences)) + "; all frames:", str(recorder.all_frames) + "; seq with res:", recorder.sequences_with_results)
+    recorder.save_dataset()
 
