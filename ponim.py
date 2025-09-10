@@ -120,7 +120,9 @@ class VAE(nn.Module):
         return self.decode(z), mu, logvar
 
     @staticmethod
-    def loss(original, reconstruction, mu, logvar, beta=1.0, weight=10.0):
+    def loss(original, reconstruction, mu, logvar, beta=1.0, weight=50.0):
+        w = torch.where(original == 1.0, weight, 1.0)
+
         # binary cross entropy is quite simple
         # take the inputs and the outputs
         # put it into this formula, where y is the original
@@ -129,14 +131,15 @@ class VAE(nn.Module):
         # closer to 0 the better,
         # we're just comparing inputs and outputs,
         # essentially a more advanced mean squared error
-        reconstruction_loss = torch.sum((1 + weight * original) * F.binary_cross_entropy(reconstruction, original, reduction='none'))
+        reconstruction_loss = F.binary_cross_entropy(reconstruction, original, weight=w, reduction='sum')
 
         # KL-loss is a bit trickier
         # We're trying to punish it, if it doesn't conform to
         # the normal distribution, aka we want the mean to be close to 0
         # and the variance (and thus the standard deviation) to be close to 1,
         # the more we differ from those, the higher the loss
-        kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        kl_loss = 0.5 * torch.sum(torch.exp(logvar) + mu**2 - 1 - logvar)
+        #kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
         # We use beta to control how much we want to conform to the normal
         # distribution, it's a tradeoff with accurate reconstruction

@@ -38,7 +38,7 @@ print(allframes.size())
 print(len(test_set))
 print(train_set[0])
 
-vae = ponim.VAE(128).to(device)
+vae = ponim.VAE(64).to(device)
 optimizer = torch.optim.Adam(vae.parameters(), lr=1e-3)
 
 def traintest(epochs):
@@ -78,7 +78,7 @@ def sample(frame, filename):
     save_image(frame.clone().detach().cpu(), filename + "_original.png")
     save_image(vae.decode(z).clone().detach().cpu(), filename + "_reconstructed.png")
 
-traintest(15)
+traintest(5)
 
 sample(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), "a")
 sample(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), "b")
