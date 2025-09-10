@@ -12,47 +12,55 @@ class VAE(nn.Module):
         # ENCODER
         
         self.encoder_conv_layers = nn.Sequential(
-            nn.Conv2d(1, 32, 4, stride=2, padding=1),
+            nn.Conv2d(1, 32, 3, stride=1, padding=1),
+            #nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Conv2d(32, 64, 4, stride=2, padding=1),
+            #nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 128, 4, stride=2, padding=1),
+            #nn.BatchNorm2d(128),
             nn.ReLU(),
         )
 
         self.flatten = nn.Flatten()
 
-        # Very interesting convolutional things going on to end up at 4096
+        # Very interesting convolutional things going on to end up at 16384
         # We add paddings, so we can have emphasis on the corners as well
         # So our rows look like 64 pixels + 2 padding pixels
-        # Then we have a 4x4 kernel
-        # That 4x4 kernel needs to go through the 66 pixels horizontally
-        # It can't quite do that, cause in the end it'd be indexing into the 67th, 68th, and 69th pixels
-        # So we do 66 - 4, which is 62
-        # Because of the stride we set, we skip every second pixel, so 62 / 2 = 31
+        # Then we have a 3x3 kernel first
+        # That 3x3 kernel needs to go through the 66 pixels horizontally
+        # It can't quite do that, cause in the end it'd be indexing into the 67th and 68th index
+        # So we do 66 - 3, which is 63
+        # At first we don't set a stride, because we want to go through every pixel
+        # to be sure we find the ball, later we use stride 2, so we divide by 2
         # Finally we add 1, tbh I don't really get why, but we do
         # Do this for the height as well, also through all the layers
-        # So we end up after the final one with 8x4
-        # Multiply that by the output channels, so 8x4x128, and we have 4096
+        # So we end up after the final one with 8x16
+        # Multiply that by the output channels, so 8x16x128, and we have 16384
 
         # Two different linear layers to get to the mean and standard divergence
-        self.encoder_linear_mean = nn.Linear(4096, latent_dimension)
-        self.encoder_linear_std_logvar = nn.Linear(4096, latent_dimension)
+        self.encoder_linear_mean = nn.Linear(16384, latent_dimension)
+        self.encoder_linear_std_logvar = nn.Linear(16384, latent_dimension)
 
         # DECODER
 
         # We don't take in a distribution, we take in an actual point/latent vector
-        self.decoder_linear = nn.Linear(latent_dimension, 4096)
+        self.decoder_linear = nn.Linear(latent_dimension, 16384)
 
         # We essentially just flip the encoder's convolution layers
         # to do a deconvolution
 
         self.decoder_deconv_layers = nn.Sequential(
+            nn.ReLU(),
             nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
+            #nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
+            #nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, 1, 4, stride=2, padding=1),
+            nn.ConvTranspose2d(32, 1, 3, stride=1, padding=1),
+            #nn.BatchNorm2d(1),
             nn.Sigmoid(),
         )
 
@@ -100,4 +108,36 @@ class VAE(nn.Module):
 
         return mean + std * eps
 
+    def decode(self, z):
+        output = self.decoder_linear(z)
+        output = output.view(-1, 128, 8, 16)
+        output = self.decoder_deconv_layers(output)
+        return output
 
+    def forward(self, input_frame):
+        mu, logvar = self.encode(input_frame)
+        z = self.reparameterize(mu, logvar)
+        return self.decode(z), mu, logvar
+
+    @staticmethod
+    def loss(original, reconstruction, mu, logvar, beta=1.0, weight=10.0):
+        # binary cross entropy is quite simple
+        # take the inputs and the outputs
+        # put it into this formula, where y is the original
+        # p is the prediction
+        # - (y * log(p) + (1 - y) * log(1 - p))
+        # closer to 0 the better,
+        # we're just comparing inputs and outputs,
+        # essentially a more advanced mean squared error
+        reconstruction_loss = torch.sum((1 + weight * original) * F.binary_cross_entropy(reconstruction, original, reduction='none'))
+
+        # KL-loss is a bit trickier
+        # We're trying to punish it, if it doesn't conform to
+        # the normal distribution, aka we want the mean to be close to 0
+        # and the variance (and thus the standard deviation) to be close to 1,
+        # the more we differ from those, the higher the loss
+        kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
+        # We use beta to control how much we want to conform to the normal
+        # distribution, it's a tradeoff with accurate reconstruction
+        return reconstruction_loss + kl_loss * beta
