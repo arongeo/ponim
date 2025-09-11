@@ -120,7 +120,17 @@ class VAE(nn.Module):
         return self.decode(z), mu, logvar
 
     @staticmethod
-    def loss(original, reconstruction, mu, logvar, beta=1.0, weight=50.0):
+    def __dice_loss(original, reconstruction, smooth=1e-6):
+        original_flat = original.view(-1)
+        reconstruction_flat = reconstruction.view(-1)
+
+        intersection = (original_flat * reconstruction_flat).sum()
+        union = original_flat.sum() + reconstruction_flat.sum()
+
+        return 1 - ((2 * intersection * smooth) / (union * smooth))
+
+    @staticmethod
+    def loss(original, reconstruction, mu, logvar, beta=1.0, weight=2000.0):
         w = torch.where(original == 1.0, weight, 1.0)
 
         # binary cross entropy is quite simple
@@ -143,4 +153,4 @@ class VAE(nn.Module):
 
         # We use beta to control how much we want to conform to the normal
         # distribution, it's a tradeoff with accurate reconstruction
-        return reconstruction_loss + kl_loss * beta
+        return reconstruction_loss + VAE.__dice_loss(original, reconstruction) + kl_loss * beta

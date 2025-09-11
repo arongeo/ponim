@@ -16,15 +16,20 @@ for sequence in sequences:
 
 allframes = torch.stack(allframes).to(device)
 
-print(random.randint(0, len(allframes) - 1))
-
 # Calculate actual counts
 total_frames = len(allframes)
-train_size = int(0.85 * total_frames)
-test_size = total_frames - train_size
+used_frames = int(0.15 * total_frames)
+train_size = int(0.85 * used_frames)
+test_size = used_frames - train_size
+
+frames_used, _ = torch.utils.data.random_split(
+    allframes, 
+    [used_frames, total_frames - used_frames], 
+    generator=torch.Generator(device=device).manual_seed(2025)
+)
 
 train_set, test_set = torch.utils.data.random_split(
-    allframes, 
+    frames_used, 
     [train_size, test_size], 
     generator=torch.Generator(device=device).manual_seed(2025)
 )
@@ -32,16 +37,16 @@ train_set, test_set = torch.utils.data.random_split(
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
 
-print(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0).size())
+print(len(frames_used))
 print(len(train_set))
-print(allframes.size())
 print(len(test_set))
-print(train_set[0])
 
-vae = ponim.VAE(64).to(device)
+vae = ponim.VAE(128).to(device)
 optimizer = torch.optim.Adam(vae.parameters(), lr=1e-3)
 
 def traintest(epochs):
+    beta = 0.0
+
     for epoch in range(epochs):
         vae.train()
 
@@ -51,7 +56,7 @@ def traintest(epochs):
             optimizer.zero_grad()
 
             reconstruction, mu, logvar = vae.forward(batch)
-            loss = ponim.VAE.loss(batch, reconstruction, mu, logvar)
+            loss = ponim.VAE.loss(batch, reconstruction, mu, logvar, weight=5000.0, beta=beta)
 
             loss.backward()
             optimizer.step()
@@ -67,7 +72,10 @@ def traintest(epochs):
 
                 test_loss += loss.item()
 
-        print(f"Epoch {epoch}; train loss: {train_loss/len(train_loader.dataset)}; test loss: {test_loss/len(test_loader.dataset)}")
+        if epochs * 0.25 < epoch and epoch < epochs * 0.75:
+            beta += 1.0 / (epochs * 0.5)
+
+        print(f"Epoch {epoch + 1} - training loss: {train_loss/len(train_loader.dataset)} - testing loss: {test_loss/len(test_loader.dataset)} - beta: {beta}")
 
 def sample(frame, filename):
     vae.eval()
@@ -78,10 +86,10 @@ def sample(frame, filename):
     save_image(frame.clone().detach().cpu(), filename + "_original.png")
     save_image(vae.decode(z).clone().detach().cpu(), filename + "_reconstructed.png")
 
-traintest(5)
+traintest(50)
 
-sample(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), "a")
-sample(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), "b")
-sample(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), "c")
-sample(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), "d")
-sample(allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), "e")
+sample(frames_used[random.randint(0, len(frames_used) - 1)].clone().detach().unsqueeze(0), "a")
+sample(frames_used[random.randint(0, len(frames_used) - 1)].clone().detach().unsqueeze(0), "b")
+sample(frames_used[random.randint(0, len(frames_used) - 1)].clone().detach().unsqueeze(0), "c")
+sample(frames_used[random.randint(0, len(frames_used) - 1)].clone().detach().unsqueeze(0), "d")
+sample(frames_used[random.randint(0, len(frames_used) - 1)].clone().detach().unsqueeze(0), "e")
