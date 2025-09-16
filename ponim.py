@@ -13,13 +13,13 @@ class VAE(nn.Module):
         
         self.encoder_conv_layers = nn.Sequential(
             nn.Conv2d(1, 32, 3, stride=1, padding=1),
-            #nn.BatchNorm2d(32),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Conv2d(32, 64, 4, stride=2, padding=1),
-            #nn.BatchNorm2d(64),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 128, 4, stride=2, padding=1),
-            #nn.BatchNorm2d(128),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
         )
 
@@ -54,13 +54,12 @@ class VAE(nn.Module):
         self.decoder_deconv_layers = nn.Sequential(
             nn.ReLU(),
             nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
-            #nn.BatchNorm2d(64),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
-            #nn.BatchNorm2d(32),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.ConvTranspose2d(32, 1, 3, stride=1, padding=1),
-            #nn.BatchNorm2d(1),
             nn.Sigmoid(),
         )
 
@@ -120,19 +119,7 @@ class VAE(nn.Module):
         return self.decode(z), mu, logvar
 
     @staticmethod
-    def __dice_loss(original, reconstruction, smooth=1e-6):
-        original_flat = original.view(-1)
-        reconstruction_flat = reconstruction.view(-1)
-
-        intersection = (original_flat * reconstruction_flat).sum()
-        union = original_flat.sum() + reconstruction_flat.sum()
-
-        return 1 - ((2 * intersection * smooth) / (union * smooth))
-
-    @staticmethod
-    def loss(original, reconstruction, mu, logvar, beta=1.0, weight=2000.0):
-        w = torch.where(original == 1.0, weight, 1.0)
-
+    def loss(original, reconstruction, mu, logvar, beta=1.0):
         # binary cross entropy is quite simple
         # take the inputs and the outputs
         # put it into this formula, where y is the original
@@ -141,16 +128,16 @@ class VAE(nn.Module):
         # closer to 0 the better,
         # we're just comparing inputs and outputs,
         # essentially a more advanced mean squared error
-        reconstruction_loss = F.binary_cross_entropy(reconstruction, original, weight=w, reduction='sum')
+        reconstruction_loss = F.binary_cross_entropy(reconstruction, original, reduction='sum')
 
         # KL-loss is a bit trickier
         # We're trying to punish it, if it doesn't conform to
         # the normal distribution, aka we want the mean to be close to 0
         # and the variance (and thus the standard deviation) to be close to 1,
         # the more we differ from those, the higher the loss
-        kl_loss = 0.5 * torch.sum(torch.exp(logvar) + mu**2 - 1 - logvar)
-        #kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        #kl_loss = 0.5 * torch.sum(torch.exp(logvar) + mu**2 - 1 - logvar)
+        kl_loss = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
         # We use beta to control how much we want to conform to the normal
         # distribution, it's a tradeoff with accurate reconstruction
-        return reconstruction_loss + VAE.__dice_loss(original, reconstruction) + kl_loss * beta
+        return reconstruction_loss + kl_loss * beta
