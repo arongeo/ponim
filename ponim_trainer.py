@@ -3,8 +3,11 @@ import torch
 import random
 from torchvision.utils import save_image
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.accelerator.current_accelerator()
 torch.set_default_device(device)
+
+print("running on", device)
 
 sequences = torch.load("pongdata.pt")
 
@@ -45,8 +48,6 @@ vae = ponim.VAE(128).to(device)
 optimizer = torch.optim.Adam(vae.parameters(), lr=1e-3)
 
 def traintest(epochs):
-    beta = 0.0
-
     for epoch in range(epochs):
         vae.train()
 
@@ -56,7 +57,7 @@ def traintest(epochs):
             optimizer.zero_grad()
 
             reconstruction, mu, logvar = vae.forward(batch)
-            loss = ponim.VAE.loss(batch, reconstruction, mu, logvar, beta=beta)
+            loss = ponim.VAE.loss(batch, reconstruction, mu, logvar)
 
             loss.backward()
             optimizer.step()
@@ -72,10 +73,7 @@ def traintest(epochs):
 
                 test_loss += loss.item()
 
-        if epochs * 0.4 < epoch and epoch < epochs * 0.7:
-            beta += 1.0 / (epochs * 0.3)
-
-        print(f"Epoch {epoch + 1} - training loss: {train_loss/len(train_loader.dataset)} - testing loss: {test_loss/len(test_loader.dataset)} - beta: {beta}")
+        print(f"Epoch {epoch + 1} - training loss: {train_loss/len(train_loader.dataset)} - testing loss: {test_loss/len(test_loader.dataset)}")
 
 def sample(frame, filename):
     vae.eval()

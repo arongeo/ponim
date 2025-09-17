@@ -13,13 +13,10 @@ class VAE(nn.Module):
         
         self.encoder_conv_layers = nn.Sequential(
             nn.Conv2d(1, 32, 3, stride=1, padding=1),
-            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Conv2d(32, 64, 4, stride=2, padding=1),
-            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 128, 4, stride=2, padding=1),
-            nn.BatchNorm2d(128),
             nn.ReLU(),
         )
 
@@ -54,10 +51,8 @@ class VAE(nn.Module):
         self.decoder_deconv_layers = nn.Sequential(
             nn.ReLU(),
             nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
-            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
-            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.ConvTranspose2d(32, 1, 3, stride=1, padding=1),
             nn.Sigmoid(),
@@ -128,7 +123,7 @@ class VAE(nn.Module):
         # closer to 0 the better,
         # we're just comparing inputs and outputs,
         # essentially a more advanced mean squared error
-        reconstruction_loss = F.binary_cross_entropy(reconstruction, original, reduction='sum')
+        reconstruction_loss = F.binary_cross_entropy(reconstruction, original, reduction='none').sum(dim=(1, 2, 3)).mean()
 
         # KL-loss is a bit trickier
         # We're trying to punish it, if it doesn't conform to
