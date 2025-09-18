@@ -1,4 +1,5 @@
 /**/__pycache__
-/pongdata.pt
+/**/*.pt
+/**/*.ptm
 /.DS_Store
 /*.png

@@ -1,7 +1,7 @@
 # vision contains all code in relation to the
 # VAE, which is responsible for encoding gameplay
 # frames into a latent space, as well as
-# generating valid frames from the latent vectors
+# generating valid frames from latent vectors
 # 
 # quick file guide:
 # - vae.py:     holds together the encoder and decoder

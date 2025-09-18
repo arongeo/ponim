@@ -1,6 +1,5 @@
 import vision
 import torch
-import random
 from torchvision.utils import save_image
 
 def train_test(model, train_loader, test_loader, epochs):

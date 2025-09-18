@@ -1,9 +1,7 @@
 import torch
 import torch.utils.data
-from torch import nn, optim
+from torch import nn
 from torch.nn import functional as F
-import math
-import random
 from vision.encoder import Encoder
 from vision.decoder import Decoder
 

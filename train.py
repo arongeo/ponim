@@ -2,6 +2,7 @@ import vision
 import torch
 import random
 from torchvision.utils import save_image
+import os
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.accelerator.current_accelerator()
@@ -31,19 +32,26 @@ frames_used, _ = torch.utils.data.random_split(
     generator=torch.Generator(device=device).manual_seed(2025)
 )
 
-train_set, test_set = torch.utils.data.random_split(
-    frames_used, 
-    [train_size, test_size], 
-    generator=torch.Generator(device=device).manual_seed(2025)
-)
-
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
-
-print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
-
 vae_model = vision.VAE(32).to(device)
 
-vision.train_test(vae_model, train_loader, test_loader, 10)
+if os.path.exists("vae.ptm"):
+    vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True))
+else:
+    train_set, test_set = torch.utils.data.random_split(
+        frames_used, 
+        [train_size, test_size], 
+        generator=torch.Generator(device=device).manual_seed(2025)
+    )
+
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
+
+    print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
+
+    vision.train_test(vae_model, train_loader, test_loader, 50)
+    torch.save(vae_model.state_dict(), "vae.ptm")
+
+print("sampling from", len(frames_used), "frames")
+
 for n in range(10):
     vision.sample(vae_model, frames_used[random.randint(0, len(frames_used) - 1)].clone().detach().unsqueeze(0), str(n))
