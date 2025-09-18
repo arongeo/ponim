@@ -123,6 +123,10 @@ class VAE(nn.Module):
         # closer to 0 the better,
         # we're just comparing inputs and outputs,
         # essentially a more advanced mean squared error
+        #
+        # once we have the difference between the pixels, we
+        # sum up all the errors in a frame, and then take the mean
+        # of all frames' errors in a batch
         reconstruction_loss = F.binary_cross_entropy(reconstruction, original, reduction='none').sum(dim=(1, 2, 3)).mean()
 
         # KL-loss is a bit trickier

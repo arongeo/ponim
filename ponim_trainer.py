@@ -40,11 +40,9 @@ train_set, test_set = torch.utils.data.random_split(
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
 
-print(len(frames_used))
-print(len(train_set))
-print(len(test_set))
+print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
 
-vae = ponim.VAE(128).to(device)
+vae = ponim.VAE(32).to(device)
 optimizer = torch.optim.Adam(vae.parameters(), lr=1e-3)
 
 def traintest(epochs):
