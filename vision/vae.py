@@ -4,69 +4,18 @@ from torch import nn, optim
 from torch.nn import functional as F
 import math
 import random
+from vision.encoder import Encoder
+from vision.decoder import Decoder
 
 class VAE(nn.Module):
-    def __init__(self, latent_dimension) -> None:
+    def __init__(self, latent_dim_size):
         super().__init__()
 
-        # ENCODER
-        
-        self.encoder_conv_layers = nn.Sequential(
-            nn.Conv2d(1, 32, 3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, 4, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 128, 4, stride=2, padding=1),
-            nn.ReLU(),
-        )
-
-        self.flatten = nn.Flatten()
-
-        # Very interesting convolutional things going on to end up at 16384
-        # We add paddings, so we can have emphasis on the corners as well
-        # So our rows look like 64 pixels + 2 padding pixels
-        # Then we have a 3x3 kernel first
-        # That 3x3 kernel needs to go through the 66 pixels horizontally
-        # It can't quite do that, cause in the end it'd be indexing into the 67th and 68th index
-        # So we do 66 - 3, which is 63
-        # At first we don't set a stride, because we want to go through every pixel
-        # to be sure we find the ball, later we use stride 2, so we divide by 2
-        # Finally we add 1, tbh I don't really get why, but we do
-        # Do this for the height as well, also through all the layers
-        # So we end up after the final one with 8x16
-        # Multiply that by the output channels, so 8x16x128, and we have 16384
-
-        # Two different linear layers to get to the mean and standard divergence
-        self.encoder_linear_mean = nn.Linear(16384, latent_dimension)
-        self.encoder_linear_std_logvar = nn.Linear(16384, latent_dimension)
-
-        # DECODER
-
-        # We don't take in a distribution, we take in an actual point/latent vector
-        self.decoder_linear = nn.Linear(latent_dimension, 16384)
-
-        # We essentially just flip the encoder's convolution layers
-        # to do a deconvolution
-
-        self.decoder_deconv_layers = nn.Sequential(
-            nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(32, 1, 3, stride=1, padding=1),
-            nn.Sigmoid(),
-        )
-
-        # Sigmoid at the end, because we need to squash the numbers between 0 and 1,
-        # since the resulting numbers should be pixel intensity values
-
-    def encode(self, input_frame):
-        output = self.flatten(self.encoder_conv_layers(input_frame))
-        mean = self.encoder_linear_mean(output)
-        std_logvar = self.encoder_linear_std_logvar(output)
-
-        return mean, std_logvar
+        # We split the VAE, since, for our purpose,
+        # we'll only need the decoder once training
+        # is done.
+        self.encoder = Encoder(latent_dim_size)
+        self.decoder = Decoder(latent_dim_size)
 
     # Reparameterize or sample, aka get a valid latent vector
     # from the returned latent space
@@ -102,16 +51,10 @@ class VAE(nn.Module):
 
         return mean + std * eps
 
-    def decode(self, z):
-        output = self.decoder_linear(z)
-        output = output.view(-1, 128, 8, 16)
-        output = self.decoder_deconv_layers(output)
-        return output
-
     def forward(self, input_frame):
-        mu, logvar = self.encode(input_frame)
+        mu, logvar = self.encoder.encode(input_frame)
         z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu, logvar
+        return self.decoder.decode(z), mu, logvar
 
     @staticmethod
     def loss(original, reconstruction, mu, logvar, beta=1.0):
@@ -134,7 +77,6 @@ class VAE(nn.Module):
         # the normal distribution, aka we want the mean to be close to 0
         # and the variance (and thus the standard deviation) to be close to 1,
         # the more we differ from those, the higher the loss
-        #kl_loss = 0.5 * torch.sum(torch.exp(logvar) + mu**2 - 1 - logvar)
         kl_loss = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
         # We use beta to control how much we want to conform to the normal
