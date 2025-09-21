@@ -172,11 +172,15 @@ class Recorder:
     def record_frame(self, frame, inputleft, inputright, result):
         global running
 
+        res = torch.zeros(3)
+        res[result] = 1.0
+
+        inputs = torch.Tensor([inputleft, inputright])
+
         self.current_sequence.append({
             "frame": frame.clone().detach(),
-            "inputleft": inputleft,
-            "inputright": inputright,
-            "result": result
+            "inputs": inputs,
+            "result": res 
         })
 
         self.current_sequence_frame_count += 1
@@ -194,9 +198,8 @@ class Recorder:
 
             self.sequences.append({
                 "frames": torch.stack([s["frame"] for s in self.current_sequence]),
-                "actions": torch.tensor([[s["inputleft"], s["inputright"]]
-                                         for s in self.current_sequence], dtype=torch.float32),
-                "results": torch.tensor([s["result"] for s in self.current_sequence], dtype=torch.long)
+                "actions": torch.stack([s["inputs"] for s in self.current_sequence]),
+                "results": torch.stack([s["result"] for s in self.current_sequence])
             })
 
             self.current_sequence = []
@@ -231,7 +234,7 @@ def start():
         r = update(ldir, rdir)
 
 if __name__ == '__main__':
-    while recorder.all_frames < 150000:
+    while recorder.all_frames < 30000:
         start()
         if len(recorder.sequences) % 20 == 0:
             print("new game; sequences:", str(len(recorder.sequences)) + "; all frames:", str(recorder.all_frames) + "; seq with res:", recorder.sequences_with_results)

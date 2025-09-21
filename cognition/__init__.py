@@ -1,1 +1,2 @@
-from cognition.model import LSTM
+from cognition.model import Cognition
+from cognition.trainer import train_test
