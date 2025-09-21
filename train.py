@@ -1,4 +1,5 @@
-import vision 
+import vision
+import cognition
 import torch
 import random
 from torchvision.utils import save_image
@@ -22,15 +23,8 @@ allframes = torch.stack(allframes).to(device)
 
 # Calculate actual counts
 total_frames = len(allframes)
-used_frames = int(0.15 * total_frames)
-train_size = int(0.85 * used_frames)
-test_size = used_frames - train_size
-
-frames_used, _ = torch.utils.data.random_split(
-    allframes, 
-    [used_frames, total_frames - used_frames], 
-    generator=torch.Generator(device=device).manual_seed(2025)
-)
+train_size = int(0.85 * total_frames)
+test_size = total_frames - train_size
 
 vae_model = vision.VAE(32).to(device)
 
@@ -38,7 +32,7 @@ if os.path.exists("vae.ptm"):
     vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True))
 else:
     train_set, test_set = torch.utils.data.random_split(
-        frames_used, 
+        allframes, 
         [train_size, test_size], 
         generator=torch.Generator(device=device).manual_seed(2025)
     )
@@ -51,7 +45,52 @@ else:
     vision.train_test(vae_model, train_loader, test_loader, 50)
     torch.save(vae_model.state_dict(), "vae.ptm")
 
-print("sampling from", len(frames_used), "frames")
+del allframes
 
-for n in range(10):
-    vision.sample(vae_model, frames_used[random.randint(0, len(frames_used) - 1)].clone().detach().unsqueeze(0), str(n))
+if "latframes" not in sequences[0]:
+    with torch.no_grad():
+        for sid, sequence in enumerate(sequences):
+            sequences[sid]["latframes"] = []
+            for frame in sequence["frames"]:
+                sequences[sid]["latframes"].append(vae_model.encoder.encode(frame.unsqueeze(0).unsqueeze(0).to(device))[0].squeeze())
+            sequences[sid]["latframes"] = torch.stack(sequences[sid]["latframes"])
+    torch.save(sequences, "pongdata.pt")
+
+grouped_seqs = {}
+for sequence in sequences:
+    if len(sequence["latframes"]) not in grouped_seqs:
+        grouped_seqs[len(sequence["latframes"])] = []
+    grouped_seqs[len(sequence["latframes"])].append(sequence)
+
+batches = []
+curr_batch = []
+prev_length = list(grouped_seqs.keys())[0]
+for length, seqs in grouped_seqs.items():
+    for sequence in seqs:
+        if len(curr_batch) == 32 or length != prev_length:
+            batches.append({
+                "latframes": torch.stack([seq["latframes"].to(device) for seq in curr_batch]),
+                "actions": torch.stack([torch.cat([torch.zeros(2).unsqueeze(0).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+                "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
+            })
+            curr_batch = []
+        curr_batch.append(sequence)
+    prev_length = length
+
+if len(curr_batch) != 0:
+    batches.append({
+        "latframes": torch.stack([seq["latframes"].to(device) for seq in curr_batch]),
+        "actions": torch.stack([torch.cat([torch.zeros(2).unsqueeze(0).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+        "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
+    })
+
+random.shuffle(batches)
+
+training_testing_split = int(0.8 * len(batches))
+
+training_batches = batches[:training_testing_split]
+testing_batches = batches[training_testing_split:]
+
+cog = cognition.Cognition(128, 32, device)
+
+cognition.train_test(cog, training_batches, testing_batches, 100)
