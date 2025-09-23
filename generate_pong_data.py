@@ -124,9 +124,9 @@ ball = Ball()
 ERROR_CHANCE = 0.3
 
 def get_ai_direction(padel):
-    if (random.random() < 0.2):
+    if (random.random() < 0.3):
         return 0
-    if (random.random() < 0.05):
+    if (random.random() < 0.5):
         return random.choice([-1, 0, 1])
 
     t = ball.py + random.uniform(-ERROR_CHANCE, ERROR_CHANCE)
@@ -233,8 +233,15 @@ def start():
 
         r = update(ldir, rdir)
 
+import argparse
+
 if __name__ == '__main__':
-    while recorder.all_frames < 30000:
+
+    parser = argparse.ArgumentParser("python3 generate_pong_data.py")
+    parser.add_argument("frames", help="The amount of frames the script should generate.", nargs='?', type=int, const=150000, default=150000)
+    args = parser.parse_args()
+    print(f"Generating {args.frames} frames of Pong data")
+    while recorder.all_frames < args.frames:
         start()
         if len(recorder.sequences) % 20 == 0:
             print("new game; sequences:", str(len(recorder.sequences)) + "; all frames:", str(recorder.all_frames) + "; seq with res:", recorder.sequences_with_results)

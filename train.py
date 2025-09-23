@@ -45,6 +45,9 @@ else:
     vision.train_test(vae_model, train_loader, test_loader, 50)
     torch.save(vae_model.state_dict(), "vae.ptm")
 
+for n in range(10):
+    vision.sample(vae_model, allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), str(n))
+
 del allframes
 
 if "latframes" not in sequences[0]:
@@ -91,6 +94,8 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = cognition.Cognition(128, 32, device)
+cog = cognition.Cognition(256, 32, device)
 
 cognition.train_test(cog, training_batches, testing_batches, 100)
+
+torch.save(cog.state_dict(), "cog.ptm")

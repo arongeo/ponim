@@ -20,12 +20,13 @@ def train_test(model, training_batches, testing_batches, epochs):
 
             pred_lat, pred_res = model.forward(batch["actions"])
 
-            loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0.01)
+            loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0)
 
             loss.backward()
             optim.step()
 
             train_loss += loss
+
 
         test_loss = 0.0
 
@@ -35,7 +36,7 @@ def train_test(model, training_batches, testing_batches, epochs):
 
             pred_lat, pred_res = model.forward(batch["actions"])
 
-            loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0.01)
+            loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0)
 
             test_loss += loss
 
