@@ -123,10 +123,10 @@ class Ball:
 ball = Ball()
 ERROR_CHANCE = 0.3
 
-def get_ai_direction(padel):
-    if (random.random() < 0.3):
+def get_ai_direction(padel, volatility, laziness):
+    if (random.random() < laziness):
         return 0
-    if (random.random() < 0.5):
+    if (random.random() < volatility):
         return random.choice([-1, 0, 1])
 
     t = ball.py + random.uniform(-ERROR_CHANCE, ERROR_CHANCE)
@@ -210,7 +210,7 @@ class Recorder:
 
 recorder = Recorder()
 
-def start():
+def start(ai_volatility, ai_laziness):
     global framebuf, ball, leftpadel, rightpadel, running, recorder
     framebuf = torch.zeros((32, 64))
     ball = Ball()
@@ -228,21 +228,22 @@ def start():
     while running:
         recorder.record_frame(framebuf, ldir, rdir, r)
 
-        ldir = get_ai_direction(leftpadel)
-        rdir = get_ai_direction(rightpadel)
+        ldir = get_ai_direction(leftpadel, ai_volatility, ai_laziness)
+        rdir = get_ai_direction(rightpadel, ai_volatility, ai_laziness)
 
         r = update(ldir, rdir)
 
 import argparse
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser("python3 generate_pong_data.py")
     parser.add_argument("frames", help="The amount of frames the script should generate.", nargs='?', type=int, const=150000, default=150000)
+    parser.add_argument("volatility", help="The chance the AI behaves in a random way (per frame).", nargs='?', type=float, const=0.5, default=0.5)
+    parser.add_argument("laziness", help="The chance the AI doesn't move at all (per frame).", nargs='?', type=float, const=0.3, default=0.3)
     args = parser.parse_args()
     print(f"Generating {args.frames} frames of Pong data")
     while recorder.all_frames < args.frames:
-        start()
+        start(args.volatility, args.laziness)
         if len(recorder.sequences) % 20 == 0:
             print("new game; sequences:", str(len(recorder.sequences)) + "; all frames:", str(recorder.all_frames) + "; seq with res:", recorder.sequences_with_results)
     recorder.save_dataset()
