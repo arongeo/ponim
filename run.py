@@ -49,7 +49,7 @@ while running:
             if event.key == pygame.K_DOWN:
                 rmovement = 1.0
     
-    rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
+    rmt = torch.Tensor([[[0.0, rmovemen]]]).to(device)
     lat, res = cog.forward(rmt)
     framebuf = vae.decoder.decode(lat).squeeze().squeeze()
 
