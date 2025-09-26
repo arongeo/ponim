@@ -17,7 +17,8 @@ class Cognition(nn.Module):
         #        nn.Tanh()
         #)
 
-        self.lstm = nn.LSTM(USER_INPUTS_SIZE, hidden_size, batch_first=True)
+        #self.lstm = nn.LSTM(USER_INPUTS_SIZE, hidden_size, batch_first=True)
+        self.gru = nn.GRU(USER_INPUTS_SIZE, hidden_size, batch_first=True)
 
         self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
         #nn.init.normal_(self.linear_hid_lat.weight, mean=0, std=0.5)
@@ -27,11 +28,13 @@ class Cognition(nn.Module):
         )
 
     def forward(self, inputs):
-        o, self.hc = self.lstm(inputs, self.hc)
+        #o, self.hc = self.lstm(inputs, self.hc)
+        o, self.hidden = self.gru(inputs, self.hidden)
         return self.linear_hid_lat(o), self.linear_hid_out(o)
 
     def reset(self, batch_size):
-        self.hc = (torch.randn(1, batch_size, self.hid_size).to(self.device) * 0.5, torch.zeros(1, batch_size, self.hid_size).to(self.device))
+        #self.hc = (torch.randn(1, batch_size, self.hid_size).to(self.device) * 0.5, torch.zeros(1, batch_size, self.hid_size).to(self.device))
+        self.hidden = torch.randn(1, batch_size, self.hid_size).to(self.device) * 0.1
 
     @staticmethod
     def loss(expected_lat_frame, predicted_lat_frame, expected_res, predicted_res, alpha=1.0):

@@ -158,7 +158,7 @@ class Recorder:
     def __init__(self):
         self.current_sequence = []
         self.sequences = []
-        self.sequence_max_frames = 50
+        self.sequence_max_frames = 500
         self.current_sequence_frame_count = 0
         self.all_frames = 0
         self.sequences_with_results = 0

@@ -5,20 +5,21 @@ import os
 from cognition import Cognition
 from vision import VAE
 
-device = torch.accelerator.current_accelerator()
+#device = torch.accelerator.current_accelerator()
+device = torch.device("cpu")
 
-cog = Cognition(256, 32, device).to(device)
+cog = Cognition(512, 128, device).to(device)
 cog.reset(1)
-vae = VAE(32).to(device)
+vae = VAE(128).to(device)
 
 if os.path.exists("vae.ptm"):
-    vae.load_state_dict(torch.load("vae.ptm", weights_only=True))
+    vae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
 else:
     print("No Vision model found, quitting")
     quit()
 
 if os.path.exists("cog.ptm"):
-    cog.load_state_dict(torch.load("cog.ptm", weights_only=True))
+    cog.load_state_dict(torch.load("cog.ptm", weights_only=True, map_location=device))
 else:
     print("No Cognition model found, quitting")
     quit()
@@ -49,7 +50,7 @@ while running:
             if event.key == pygame.K_DOWN:
                 rmovement = 1.0
     
-    rmt = torch.Tensor([[[0.0, rmovemen]]]).to(device)
+    rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
     lat, res = cog.forward(rmt)
     framebuf = vae.decoder.decode(lat).squeeze().squeeze()
 
@@ -66,3 +67,5 @@ while running:
 
     # flip() the display to put your work on screen
     pygame.display.flip()
+
+    clock.tick(30)
