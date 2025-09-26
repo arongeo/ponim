@@ -24,7 +24,8 @@ class Cognition(nn.Module):
         #nn.init.normal_(self.linear_hid_lat.weight, mean=0, std=0.5)
         self.linear_hid_out = nn.Sequential(
                 nn.Linear(hidden_size, POSSIBLE_RESULTS_SIZE),
-                nn.LogSoftmax(dim=1)
+                nn.Dropout(0.3),
+                nn.Softmax(dim=1)
         )
 
     def forward(self, inputs):
