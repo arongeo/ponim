@@ -6,7 +6,7 @@ from torch import nn
 from torch.nn import functional as F
 
 def train_test(model, training_batches, testing_batches, epochs):
-    optim = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optim = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     for epoch in range(epochs):
         model.train()
