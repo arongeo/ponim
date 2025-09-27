@@ -15,10 +15,11 @@ def train_test(model, training_batches, testing_batches, epochs):
 
         for batch in training_batches:
             model.reset(batch["actions"].size(0))
+            bs, ss, lds = batch["latframes"].shape
 
             optim.zero_grad()
 
-            pred_lat, pred_res = model.forward(batch["actions"])
+            pred_lat, pred_res = model.forward(batch["actions"], torch.cat([torch.randn(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
 
             loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0)
 
@@ -34,7 +35,7 @@ def train_test(model, training_batches, testing_batches, epochs):
         for batch in testing_batches:
             model.reset(batch["actions"].size(0))
 
-            pred_lat, pred_res = model.forward(batch["actions"])
+            pred_lat, pred_res = model.forward(batch["actions"], torch.cat([torch.randn(1, 1, model.latent_dim_size), batch["latframes"][:-1]], dim=-1))
 
             loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0)
 
