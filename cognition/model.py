@@ -31,7 +31,7 @@ class Cognition(nn.Module):
 
     def forward(self, inputs, prev_lat_frames):
         #o, self.hc = self.lstm(inputs, self.hc)
-        o, self.hidden = self.gru(inputs, torch.cat([self.hidden, prev_lat_frames]))
+        o, self.hidden = self.gru(torch.cat([inputs, prev_lat_frames], dim=-1), self.hidden)
         return self.linear_hid_lat(o)#, self.linear_hid_out(o)
 
     def reset(self, batch_size):
