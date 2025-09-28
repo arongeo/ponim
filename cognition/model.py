@@ -24,7 +24,8 @@ class Cognition(nn.Module):
         self.layer_norm = nn.LayerNorm(hidden_size)
         self.dropout = nn.Dropout(0.4)
 
-        self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
+        self.linear_hid_lat_mean = nn.Linear(hidden_size, latent_dim_size)
+        self.linear_hid_lat_logvar = nn.Linear(hidden_size, latent_dim_size)
         #nn.init.normal_(self.linear_hid_lat.weight, mean=0, std=0.5)
         #self.linear_hid_out = nn.Sequential(
         #        nn.Linear(hidden_size, POSSIBLE_RESULTS_SIZE),
@@ -32,21 +33,24 @@ class Cognition(nn.Module):
         #        nn.Softmax(dim=1)
         #)
 
-    def forward(self, inputs, prev_lat_frames):
-        o, self.hc = self.lstm(torch.cat([inputs, prev_lat_frames], dim=-1), self.hc)
+    def forward(self, inputs, prev_lat_mean):
+        o, self.hc = self.lstm(torch.cat([inputs, prev_lat_mean], dim=-1), self.hc)
         #o, self.hidden = self.gru(torch.cat([inputs, prev_lat_frames], dim=-1), self.hidden)
         o = self.layer_norm(o)
         o = self.dropout(o)
-        return self.linear_hid_lat(o)#, self.linear_hid_out(o)
+        return self.linear_hid_lat_mean(o), self.linear_hid_lat_logvar(o)
 
     def reset(self, batch_size):
         self.hc = (torch.randn(1, batch_size, self.hid_size).to(self.device) * 0.5, torch.zeros(1, batch_size, self.hid_size).to(self.device))
         #self.hidden = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
 
     @staticmethod
-    def loss(expected_lat_frame, predicted_lat_frame):#, expected_res, predicted_res, alpha=1.0):
-        lat_loss = F.mse_loss(predicted_lat_frame, expected_lat_frame)
+    def loss(expected_lat_mean, predicted_lat_mean, predicted_logvar):#, expected_res, predicted_res, alpha=1.0):
+        #lat_loss = F.mse_loss(predicted_lat_frame, expected_lat_frame)
         #res_loss = F.cross_entropy(predicted_res, expected_res)
 
-        return lat_loss
+        var = torch.exp(predicted_logvar) + 1e-6
+        loss = F.gaussian_nll_loss(predicted_lat_mean, expected_lat_mean, var)
+
+        return loss
 
