@@ -6,7 +6,7 @@ from torch import nn
 from torch.nn import functional as F
 
 def train_test(model, training_batches, testing_batches, epochs):
-    optim = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optim = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     for epoch in range(epochs):
         model.train()
@@ -18,9 +18,9 @@ def train_test(model, training_batches, testing_batches, epochs):
 
             optim.zero_grad()
 
-            pred_lat, pred_res = model.forward(batch["actions"])
+            pred_lat = model.forward(batch["actions"])
 
-            loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0)
+            loss = Cognition.loss(batch["latframes"], pred_lat)
 
             loss.backward()
             optim.step()
@@ -34,9 +34,9 @@ def train_test(model, training_batches, testing_batches, epochs):
         for batch in testing_batches:
             model.reset(batch["actions"].size(0))
 
-            pred_lat, pred_res = model.forward(batch["actions"])
+            pred_lat = model.forward(batch["actions"])
 
-            loss = Cognition.loss(batch["latframes"], pred_lat, batch["results"], pred_res, alpha=0)
+            loss = Cognition.loss(batch["latframes"], pred_lat)
 
             test_loss += loss
 

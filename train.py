@@ -26,10 +26,10 @@ total_frames = len(allframes)
 train_size = int(0.85 * total_frames)
 test_size = total_frames - train_size
 
-vae_model = vision.VAE(32).to(device)
+vae_model = vision.VAE(64).to(device)
 
 if os.path.exists("vae.ptm"):
-    vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True))
+    vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
 else:
     train_set, test_set = torch.utils.data.random_split(
         allframes, 
@@ -37,8 +37,8 @@ else:
         generator=torch.Generator(device=device).manual_seed(2025)
     )
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, generator=torch.Generator(device=device))
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=128, shuffle=True, generator=torch.Generator(device=device))
 
     print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
 
@@ -70,10 +70,10 @@ curr_batch = []
 prev_length = list(grouped_seqs.keys())[0]
 for length, seqs in grouped_seqs.items():
     for sequence in seqs:
-        if len(curr_batch) == 32 or length != prev_length:
+        if len(curr_batch) == 128 or length != prev_length:
             batches.append({
                 "latframes": torch.stack([seq["latframes"].to(device) for seq in curr_batch]),
-                "actions": torch.stack([torch.cat([torch.zeros(2).unsqueeze(0).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+                "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
                 "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
             })
             curr_batch = []
@@ -83,7 +83,7 @@ for length, seqs in grouped_seqs.items():
 if len(curr_batch) != 0:
     batches.append({
         "latframes": torch.stack([seq["latframes"].to(device) for seq in curr_batch]),
-        "actions": torch.stack([torch.cat([torch.zeros(2).unsqueeze(0).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+        "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
         "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
     })
 
@@ -94,7 +94,7 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = cognition.Cognition(256, 32, device)
+cog = cognition.Cognition(256, 64, device)
 
 cognition.train_test(cog, training_batches, testing_batches, 100)
 
