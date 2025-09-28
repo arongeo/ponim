@@ -37,8 +37,8 @@ else:
         generator=torch.Generator(device=device).manual_seed(2025)
     )
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=True, generator=torch.Generator(device=device))
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=256, shuffle=True, generator=torch.Generator(device=device))
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=256, shuffle=True, generator=torch.Generator(device=device))
 
     print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
 
@@ -70,7 +70,7 @@ curr_batch = []
 prev_length = list(grouped_seqs.keys())[0]
 for length, seqs in grouped_seqs.items():
     for sequence in seqs:
-        if len(curr_batch) == 32 or length != prev_length:
+        if len(curr_batch) == 256 or length != prev_length:
             batches.append({
                 "latframes": torch.stack([seq["latframes"].to(device) for seq in curr_batch]),
                 "actions": torch.stack([torch.cat([torch.zeros(2).unsqueeze(0).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
@@ -94,7 +94,8 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = cognition.Cognition(1024, 128, device)
+cog = cognition.Cognition(256, 128, device)
+#cog = torch.compile(cog)
 
 cognition.train_test(cog, training_batches, testing_batches, 100)
 

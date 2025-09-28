@@ -8,7 +8,7 @@ from vision import VAE
 #device = torch.accelerator.current_accelerator()
 device = torch.device("cpu")
 
-cog = Cognition(512, 128, device).to(device)
+cog = Cognition(256, 128, device).to(device)
 cog.reset(1)
 vae = VAE(128).to(device)
 
@@ -36,6 +36,8 @@ rmovement = 0.0
 
 running = True
 
+prevlat = torch.zeros(1, 1, 128)
+
 while running:
     rmovement = 0
 
@@ -51,10 +53,9 @@ while running:
                 rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
-    lat, res = cog.forward(rmt)
+    lat = cog.forward(rmt, prevlat)
     framebuf = vae.decoder.decode(lat).squeeze().squeeze()
-
-    print(res)
+    prevlat = lat.clone().detach()
 
     for i in range(32):
         for j in range(64):

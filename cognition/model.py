@@ -21,6 +21,9 @@ class Cognition(nn.Module):
         #self.lstm = nn.LSTM(USER_INPUTS_SIZE, hidden_size, batch_first=True)
         self.gru = nn.GRU(USER_INPUTS_SIZE + latent_dim_size, hidden_size, num_layers=num_layers, batch_first=True, dropout=(0.2 if 1 < num_layers else 0.0))
 
+        self.layer_norm = nn.LayerNorm(hidden_size)
+        self.dropout = nn.Dropout(0.4)
+
         self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
         #nn.init.normal_(self.linear_hid_lat.weight, mean=0, std=0.5)
         #self.linear_hid_out = nn.Sequential(
@@ -32,11 +35,13 @@ class Cognition(nn.Module):
     def forward(self, inputs, prev_lat_frames):
         #o, self.hc = self.lstm(inputs, self.hc)
         o, self.hidden = self.gru(torch.cat([inputs, prev_lat_frames], dim=-1), self.hidden)
+        o = self.layer_norm(o)
+        o = self.dropout(o)
         return self.linear_hid_lat(o)#, self.linear_hid_out(o)
 
     def reset(self, batch_size):
         #self.hc = (torch.randn(1, batch_size, self.hid_size).to(self.device) * 0.5, torch.zeros(1, batch_size, self.hid_size).to(self.device))
-        self.hidden = torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
+        self.hidden = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
 
     @staticmethod
     def loss(expected_lat_frame, predicted_lat_frame):#, expected_res, predicted_res, alpha=1.0):
