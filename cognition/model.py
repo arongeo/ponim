@@ -14,20 +14,20 @@ class Cognition(nn.Module):
         self.device = device
         self.num_layers = num_layers
 
-        self.lstm = nn.LSTM(USER_INPUTS_SIZE, hidden_size, batch_first=True, num_layers=1)
+        self.lstm = nn.LSTM(USER_INPUTS_SIZE + latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
 
         self.dropout = nn.Dropout(0.3)
         self.layer_norm = nn.LayerNorm(hidden_size)
 
         self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
     
-    def forward(self, inputs):
-        o, self.hc = self.lstm(inputs, self.hc)
-        o = self.layer_norm(o)
+    def forward(self, inputs, prev_latent):
+        o, self.hc = self.lstm(torch.cat([inputs, prev_latent], dim=-1), self.hc)
+        o = self.dropout(o)
         return self.linear_hid_lat(o)
 
     def reset(self, batch_size):
-        self.hc = (torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1, torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device))
+        self.hc = (torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device), torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device))
 
     @staticmethod
     def loss(expected_lat_frame, predicted_lat_frame):

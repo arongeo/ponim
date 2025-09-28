@@ -42,7 +42,7 @@ else:
 
     print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
 
-    vision.train_test(vae_model, train_loader, test_loader, 50)
+    vision.train_test(vae_model, train_loader, test_loader, 10)
     torch.save(vae_model.state_dict(), "vae.ptm")
 
 for n in range(10):
@@ -94,7 +94,7 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = cognition.Cognition(256, 64, device)
+cog = cognition.Cognition(1024, 64, device, num_layers=3)
 
 cognition.train_test(cog, training_batches, testing_batches, 100)
 
