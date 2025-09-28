@@ -8,7 +8,7 @@ from vision import VAE
 #device = torch.accelerator.current_accelerator()
 device = torch.device("cpu")
 
-cog = Cognition(256, 128, device).to(device)
+cog = Cognition(1024, 128, device).to(device)
 cog.reset(1)
 vae = VAE(128).to(device)
 
@@ -18,8 +18,8 @@ else:
     print("No Vision model found, quitting")
     quit()
 
-if os.path.exists("cog.ptm"):
-    cog.load_state_dict(torch.load("cog.ptm", weights_only=True, map_location=device))
+if os.path.exists("cog_snapshot.ptm"):
+    cog.load_state_dict(torch.load("cog_snapshot.ptm", weights_only=True, map_location=device))
 else:
     print("No Cognition model found, quitting")
     quit()
@@ -53,7 +53,7 @@ while running:
                 rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
-    lat = cog.forward(rmt, prevlat)
+    lat, var = cog.forward(rmt, prevlat)
     framebuf = vae.decoder.decode(lat).squeeze().squeeze()
     prevlat = lat.clone().detach()
 

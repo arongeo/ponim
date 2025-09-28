@@ -18,20 +18,26 @@ def train_test(model, training_batches, testing_batches, epochs):
                 model.reset(batch["actions"].size(0))
                 bs, ss, lds = batch["latframes"].shape
 
-                optim.zero_grad()
+                latframes = torch.cat([torch.zeros(bs, 1, lds), batch["latframes"][:, :-1]], dim=1)
 
-                #pred_lat, pred_res = model.forward(batch["actions"], torch.cat([torch.randn(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
-                pred_mu, pred_lv = model.forward(batch["actions"], torch.cat([torch.zeros(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
+                for start in range(0, ss, 50):
+                    optim.zero_grad()
+                    
+                    end = min(start + 50, ss)
 
-                loss = Cognition.loss(batch["latframes"], pred_mu, pred_lv)#, batch["results"], pred_res, alpha=0)
+                    #pred_lat, pred_res = model.forward(batch["actions"], torch.cat([torch.randn(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
+                    pred_mu, pred_lv = model.forward(batch["actions"][:, start:end, :], latframes[:, start:end, :])
+                    model.hc = (torch.zeros(model.num_layers, bs, model.hid_size).to(model.device), torch.zeros(model.num_layers, bs, model.hid_size).to(model.device))
 
-                loss.backward()
+                    loss = Cognition.loss(batch["latframes"][:, start:end, :], pred_mu, pred_lv)#, batch["results"], pred_res, alpha=0)
 
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    loss.backward(retain_graph=True)
 
-                optim.step()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
-                train_loss += loss
+                    optim.step()
+
+                    train_loss += loss
 
             test_loss = 0.0
 

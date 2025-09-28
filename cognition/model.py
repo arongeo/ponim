@@ -41,7 +41,7 @@ class Cognition(nn.Module):
         return self.linear_hid_lat_mean(o), self.linear_hid_lat_logvar(o)
 
     def reset(self, batch_size):
-        self.hc = (torch.randn(1, batch_size, self.hid_size).to(self.device) * 0.5, torch.zeros(1, batch_size, self.hid_size).to(self.device))
+        self.hc = (torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.5, torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device))
         #self.hidden = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
 
     @staticmethod
