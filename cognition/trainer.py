@@ -4,8 +4,9 @@ import torch
 import torch.utils.data
 from torch import nn
 from torch.nn import functional as F
+from vision import VAE
 
-def train_test(model, training_batches, testing_batches, epochs):
+def train_test(model, encoder: VAE, training_batches, testing_batches, epochs):
     optim = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     try:
@@ -17,31 +18,38 @@ def train_test(model, training_batches, testing_batches, epochs):
             for batch in training_batches:
                 model.reset(batch["actions"].size(0))
                 
-                bs, _, lds = batch["latframes"].shape
-
                 optim.zero_grad()
 
-                pred_lat = model.forward(batch["actions"], torch.cat([torch.zeros(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
+                mu, logvar = encoder.encode(batch["frames"])
+                std = torch.exp(0.5 * logvar)
+                z = mu + torch.randn_like(std) * std
 
-                loss = Cognition.loss(batch["latframes"], pred_lat)
+                bs, _, lds = z.shape
+
+                pred_lat = model.forward(batch["actions"])
+
+                loss = Cognition.loss(z, pred_lat)
 
                 loss.backward()
                 optim.step()
 
                 train_loss += loss
 
-
             test_loss = 0.0
 
             model.eval()
             for batch in testing_batches:
                 model.reset(batch["actions"].size(0))
-                bs, _, lds = batch["latframes"].shape
 
-                #pred_lat = model.forward(batch["actions"])
-                pred_lat = model.forward(batch["actions"], torch.cat([torch.zeros(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
+                bmu, logvar = encoder.encode(batch["frames"])
+                std = torch.exp(0.5 * logvar)
+                z = mu + torch.randn_like(std) * std
 
-                loss = Cognition.loss(batch["latframes"], pred_lat)
+                bs, _, lds = z.shape
+                
+                pred_lat = model.forward(batch["actions"], torch.cat([torch.zeros(bs, 1, lds), z[:, :-1]], dim=1))
+
+                loss = Cognition.loss(z, pred_lat)
 
                 test_loss += loss
 
