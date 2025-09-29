@@ -5,8 +5,8 @@ import random
 from torchvision.utils import save_image
 import os
 
-#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.accelerator.current_accelerator()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.accelerator.current_accelerator()
 torch.set_default_device(device)
 
 print("running on", device)
@@ -49,6 +49,7 @@ for n in range(10):
     vision.sample(vae_model, allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), str(n))
 
 del allframes
+
 grouped_seqs = {}
 for sequence in sequences:
     if len(sequence["frames"]) not in grouped_seqs:

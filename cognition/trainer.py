@@ -4,6 +4,7 @@ import torch
 import torch.utils.data
 from torch import nn
 from torch.nn import functional as F
+from vision import VAE
 
 from vision import VAE
 from vision.encoder import Encoder
@@ -19,7 +20,7 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
 
             for batch in training_batches:
                 model.reset(batch["actions"].size(0))
-                
+
                 bs, ss, h, w = batch["frames"].shape
 
                 vae_encoder.eval()
@@ -39,7 +40,6 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                 optim.step()
 
                 train_loss += loss
-
 
             test_loss = 0.0
 
