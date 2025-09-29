@@ -5,7 +5,10 @@ import torch.utils.data
 from torch import nn
 from torch.nn import functional as F
 
-def train_test(model, training_batches, testing_batches, epochs):
+from vision import VAE
+from vision.encoder import Encoder
+
+def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing_batches, epochs):
     optim = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     try:
@@ -17,13 +20,20 @@ def train_test(model, training_batches, testing_batches, epochs):
             for batch in training_batches:
                 model.reset(batch["actions"].size(0))
                 
-                bs, _, lds = batch["latframes"].shape
+                bs, ss, h, w = batch["frames"].shape
+
+                vae_encoder.eval()
+                with torch.no_grad():
+                    mu, logvar = vae_encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
+                    std = torch.exp(0.5 * logvar)
+                    z = mu + std * torch.randn_like(std)
+                    z = z.view(bs, ss, -1)
 
                 optim.zero_grad()
 
-                pred_lat = model.forward(batch["actions"], torch.cat([torch.zeros(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
+                pred_lat = model.forward(batch["actions"])
 
-                loss = Cognition.loss(batch["latframes"], pred_lat)
+                loss = Cognition.loss(z, pred_lat)
 
                 loss.backward()
                 optim.step()
@@ -36,12 +46,20 @@ def train_test(model, training_batches, testing_batches, epochs):
             model.eval()
             for batch in testing_batches:
                 model.reset(batch["actions"].size(0))
-                bs, _, lds = batch["latframes"].shape
+
+                bs, ss, h, w = batch["frames"].shape
+
+                vae_encoder.eval()
+                with torch.no_grad():
+                    mu, logvar = vae_encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
+                    std = torch.exp(0.5 * logvar)
+                    z = mu + std * torch.randn_like(std)
+                    z = z.view(bs, ss, -1)
 
                 #pred_lat = model.forward(batch["actions"])
-                pred_lat = model.forward(batch["actions"], torch.cat([torch.zeros(bs, 1, lds), batch["latframes"][:, :-1]], dim=1))
+                pred_lat = model.forward(batch["actions"])
 
-                loss = Cognition.loss(batch["latframes"], pred_lat)
+                loss = Cognition.loss(z, pred_lat)
 
                 test_loss += loss
 

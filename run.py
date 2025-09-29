@@ -5,20 +5,20 @@ import os
 from cognition import Cognition
 from vision import VAE
 
-device = torch.accelerator.current_accelerator()
+device = torch.device("cpu")
 
-cog = Cognition(256, 32, device).to(device)
+cog = Cognition(1024, 64, device, num_layers=3).to(device)
 cog.reset(1)
-vae = VAE(32).to(device)
+vae = VAE(64).to(device)
 
 if os.path.exists("vae.ptm"):
-    vae.load_state_dict(torch.load("vae.ptm", weights_only=True))
+    vae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
 else:
     print("No Vision model found, quitting")
     quit()
 
-if os.path.exists("cog.ptm"):
-    cog.load_state_dict(torch.load("cog.ptm", weights_only=True))
+if os.path.exists("cog_snapshot.ptm"):
+    cog.load_state_dict(torch.load("cog_snapshot.ptm", weights_only=True, map_location=device))
 else:
     print("No Cognition model found, quitting")
     quit()
@@ -35,6 +35,8 @@ rmovement = 0.0
 
 running = True
 
+prev_latent = torch.zeros(1, 1, 64).to(device)
+
 while running:
     rmovement = 0
 
@@ -50,10 +52,9 @@ while running:
                 rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
-    lat, res = cog.forward(rmt)
+    lat = cog.forward(rmt, prev_latent)
+    prev_latent = lat.clone().detach()
     framebuf = vae.decoder.decode(lat).squeeze().squeeze()
-
-    print(res)
 
     for i in range(32):
         for j in range(64):
@@ -66,3 +67,5 @@ while running:
 
     # flip() the display to put your work on screen
     pygame.display.flip()
+
+    clock.tick(30)

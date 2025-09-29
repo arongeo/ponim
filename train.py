@@ -49,21 +49,11 @@ for n in range(10):
     vision.sample(vae_model, allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), str(n))
 
 del allframes
-
-if "latframes" not in sequences[0]:
-    with torch.no_grad():
-        for sid, sequence in enumerate(sequences):
-            sequences[sid]["latframes"] = []
-            for frame in sequence["frames"]:
-                sequences[sid]["latframes"].append(vae_model.encoder.encode(frame.unsqueeze(0).unsqueeze(0).to(device))[0].squeeze())
-            sequences[sid]["latframes"] = torch.stack(sequences[sid]["latframes"])
-    torch.save(sequences, "pongdata.pt")
-
 grouped_seqs = {}
 for sequence in sequences:
-    if len(sequence["latframes"]) not in grouped_seqs:
-        grouped_seqs[len(sequence["latframes"])] = []
-    grouped_seqs[len(sequence["latframes"])].append(sequence)
+    if len(sequence["frames"]) not in grouped_seqs:
+        grouped_seqs[len(sequence["frames"])] = []
+    grouped_seqs[len(sequence["frames"])].append(sequence)
 
 batches = []
 curr_batch = []
@@ -72,7 +62,7 @@ for length, seqs in grouped_seqs.items():
     for sequence in seqs:
         if len(curr_batch) == 128 or length != prev_length:
             batches.append({
-                "latframes": torch.stack([seq["latframes"].to(device) for seq in curr_batch]),
+                "frames": torch.stack([seq["frames"].to(device) for seq in curr_batch]),
                 "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
                 "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
             })
@@ -82,7 +72,7 @@ for length, seqs in grouped_seqs.items():
 
 if len(curr_batch) != 0:
     batches.append({
-        "latframes": torch.stack([seq["latframes"].to(device) for seq in curr_batch]),
+        "frames": torch.stack([seq["frames"].to(device) for seq in curr_batch]),
         "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
         "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
     })
@@ -94,8 +84,8 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = cognition.Cognition(1024, 64, device, num_layers=3)
+cog = cognition.Cognition(512, 64, device)
 
-cognition.train_test(cog, training_batches, testing_batches, 100)
+cognition.train_test(cog, vae_model.encoder, training_batches, testing_batches, 100)
 
 torch.save(cog.state_dict(), "cog.ptm")
