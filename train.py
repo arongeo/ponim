@@ -5,7 +5,7 @@ import random
 from torchvision.utils import save_image
 import os
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 #device = torch.accelerator.current_accelerator()
 torch.set_default_device(device)
 

@@ -32,9 +32,9 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
 
                 optim.zero_grad()
 
-                pred_lat = model.forward(batch["actions"])
+                mco, mu, stdev = model.forward(batch["actions"])
 
-                loss = Cognition.loss(z, pred_lat)
+                loss = Cognition.loss(z, mco, mu, stdev)
 
                 loss.backward()
                 optim.step()
@@ -57,9 +57,10 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                     z = z.view(bs, ss, -1)
 
                 #pred_lat = model.forward(batch["actions"])
-                pred_lat = model.forward(batch["actions"])
+                #pred_lat = model.forward(batch["actions"])
+                mco, mu, stdev = model.forward(batch["actions"])
 
-                loss = Cognition.loss(z, pred_lat)
+                loss = Cognition.loss(z, mco, mu, stdev)
 
                 test_loss += loss
 
