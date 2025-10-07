@@ -35,7 +35,7 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
 
                 print(z.shape)
 
-                mco, mu, stdev = model.forward(batch["actions"], torch.cat([torch.zeros(z.shape[0], z.shape[1], 1), z[:, :, :-1]]))
+                mco, mu, stdev = model.forward(batch["actions"], torch.cat([torch.zeros(z.shape[0], z.shape[1], 1), z[:, :, :-1]], dim=-1))
 
                 loss = Cognition.loss(z, mco, mu, stdev)
 
@@ -61,7 +61,7 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
 
                 #pred_lat = model.forward(batch["actions"])
                 #pred_lat = model.forward(batch["actions"])
-                mco, mu, stdev = model.forward(batch["actions"], torch.cat([torch.zeros(z.shape[0], z.shape[1], 1), z[:, :, :-1]]))
+                mco, mu, stdev = model.forward(batch["actions"], torch.cat([torch.zeros(z.shape[0], z.shape[1], 1), z[:, :, :-1]], dim=-1))
                 #mco, mu, stdev = model.forward(batch["actions"])
 
                 loss = Cognition.loss(z, mco, mu, stdev)
