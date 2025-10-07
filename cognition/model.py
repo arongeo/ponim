@@ -39,7 +39,7 @@ class Cognition(nn.Module):
         ], dim=-1)
 
         mu = mu.view(mu.shape[0], mu.shape[1], self.mixtures, self.latent_dim_size)
-        stdev = torch.exp(0.5 * mu.view(stdev.shape[0], stdev.shape[1], self.mixtures, self.latent_dim_size))
+        stdev = torch.exp(0.5 * stdev.view(stdev.shape[0], stdev.shape[1], self.mixtures, self.latent_dim_size))
         mco = mco.unsqueeze(2)
 
         return mco, mu, stdev
