@@ -85,7 +85,7 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = cognition.Cognition(512, 64, device)
+cog = cognition.Cognition(512, 5, 64, device)
 
 cognition.train_test(cog, vae_model.encoder, training_batches, testing_batches, 100)
 
