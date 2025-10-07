@@ -5,8 +5,8 @@ import random
 from torchvision.utils import save_image
 import os
 
-device = torch.device("cpu")
-#device = torch.accelerator.current_accelerator()
+#device = torch.device("cpu")
+device = torch.accelerator.current_accelerator()
 torch.set_default_device(device)
 
 print("running on", device)
