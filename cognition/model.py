@@ -17,7 +17,7 @@ class Cognition(nn.Module):
         self.mixtures = mixtures
         self.latent_dim_size = latent_dim_size
 
-        self.lstm = nn.LSTM(USER_INPUTS_SIZE, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
+        self.lstm = nn.LSTM(USER_INPUTS_SIZE + latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
 
         self.dropout = nn.Dropout(0.3)
         self.layer_norm = nn.LayerNorm(hidden_size)
@@ -26,8 +26,8 @@ class Cognition(nn.Module):
 
         self.linear_hid_mix = nn.Linear(hidden_size, self.mixtures * (1 + 2 * self.latent_dim_size))
  
-    def forward(self, inputs: torch.Tensor):
-        o, self.hc = self.lstm(inputs, self.hc)
+    def forward(self, inputs: torch.Tensor, prev_lat_frame: torch.Tensor):
+        o, self.hc = self.lstm(torch.cat([inputs, prev_lat_frame], dim=-1), self.hc)
         o = self.dropout(o)
         #return self.linear_hid_lat(o)
         o = self.linear_hid_mix(o)
@@ -54,7 +54,7 @@ class Cognition(nn.Module):
         mix_log_prob = Normal(mu, stdev).log_prob(expected_mu)
         sum_mix_log_prob = mix_log_prob.sum(dim=-1)
 
-        logp_mco = F.log_softmax(mco, dim=-1)
+        logp_mco = F.log_softmax(mco, dim=-1).unsqueeze(2)
 
         return -1.0 * torch.logsumexp(sum_mix_log_prob + logp_mco, dim=-1).mean()
 
