@@ -43,7 +43,7 @@ else:
 
     print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
 
-    vision.train_test(vae_model, train_loader, test_loader, 10)
+    vision.train_test(vae_model, train_loader, test_loader, 10, beta=0.1)
     torch.save(vae_model.state_dict(), "vae.ptm")
 
 for n in range(10):
