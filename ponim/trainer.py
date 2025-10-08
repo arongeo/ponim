@@ -35,7 +35,7 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                 torch.nn.utils.clip_grad_norm_(ponim.parameters(), max_norm=1.0)
                 optim.step()
 
-                train_loss += loss
+                train_loss += loss.detach().item()
 
             test_loss = 0.0
 
@@ -57,7 +57,7 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
                 optim.zero_grad()
 
-                test_loss += loss
+                test_loss += loss.detach().item()
 
             print(f"Epoch {epoch + 1} - training loss: {train_loss} - testing loss: {test_loss}")
     except KeyboardInterrupt:
