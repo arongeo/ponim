@@ -23,4 +23,4 @@ class Ponim(nn.Module):
     @staticmethod
     def loss(pred_frame: torch.Tensor, target_frame: torch.Tensor) -> torch.Tensor:
         bs, ss, h, w = pred_frame.shape
-        return F.binary_cross_entropy(pred_frame, target_frame, reduction='sum').mean()
+        return F.binary_cross_entropy(pred_frame, target_frame, reduction='mean')

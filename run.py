@@ -6,7 +6,7 @@ from ponim import Ponim
 
 device = torch.device("cpu")
 
-model = Ponim(64, 256, device)
+model = Ponim(64, 1024, device)
 
 if os.path.exists("ponim_snapshot.ptm"):
     model.load_state_dict(torch.load("ponim_snapshot.ptm", weights_only=True, map_location=device))
@@ -49,9 +49,7 @@ while running:
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
     lat = model.cog.forward(rmt, prev_latent)
     prev_latent = lat.clone().detach()
-    framebuf = model.vae.decoder.decode(lat).squeeze().squeeze()
-
-    print(framebuf)
+    framebuf = torch.round(model.vae.decoder.decode(lat).squeeze().squeeze())
 
     for i in range(32):
         for j in range(64):
