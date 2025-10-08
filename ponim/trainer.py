@@ -4,12 +4,10 @@ import torch
 import torch.utils.data
 from torch import nn
 from torch.nn import functional as F
-from torch.amp import autocast, GradScaler
 
 def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
     optim = torch.optim.Adam(ponim.parameters(), lr=1e-3)
-    use_amp = torch.cuda.is_available() and ("cuda" in str(ponim.device))
-    scaler = GradScaler('cuda', enabled=use_amp)
+    use_amp = False  # disable AMP to avoid dtype mismatches during backward
     recon_weight = 1.0
     latent_weight = 0.1
 
@@ -33,34 +31,27 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
                 optim.zero_grad(set_to_none=True)
 
-                with autocast('cuda', enabled=use_amp):
-                    pred_z = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1]).view(bs * (ss - 1), -1)
-                    pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
+                # Forward cognition and decode in float32
+                pred_z = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1]).view(bs * (ss - 1), -1)
+                pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
 
-                # Normalize BCE by number of pixels and elements; compute in full precision
-                with autocast('cuda', enabled=False):
-                    pred_frame_bce = F.binary_cross_entropy(
-                        pred_frame.view(bs * (ss - 1), 1, h, w).float(),
-                        batch["frames"][:, 1:].contiguous().view(bs * (ss - 1), 1, h, w).float(),
-                        reduction='sum'
-                    ) / (bs * (ss - 1) * h * w)
+                # Normalize BCE by number of pixels and elements
+                pred_frame_bce = F.binary_cross_entropy(
+                    pred_frame.view(bs * (ss - 1), 1, h, w).float(),
+                    batch["frames"][:, 1:].contiguous().view(bs * (ss - 1), 1, h, w).float(),
+                    reduction='sum'
+                ) / (bs * (ss - 1) * h * w)
 
                 # Latent prediction loss (compare to next latent)
                 pred_z_seq = pred_z.view(bs, (ss - 1), -1)
                 latent_target = z[:, 1:]
-                latent_l2 = F.mse_loss(pred_z_seq, latent_target, reduction='mean')
+                latent_l2 = F.mse_loss(pred_z_seq.float(), latent_target.float(), reduction='mean')
 
                 loss = recon_weight * pred_frame_bce + latent_weight * latent_l2
 
-                if use_amp:
-                    scaler.scale(loss).backward()
-                    torch.nn.utils.clip_grad_norm_(ponim.parameters(), max_norm=1.0)
-                    scaler.step(optim)
-                    scaler.update()
-                else:
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(ponim.parameters(), max_norm=1.0)
-                    optim.step()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(ponim.parameters(), max_norm=1.0)
+                optim.step()
 
                 train_loss += loss.detach().item()
                 train_steps += 1
@@ -83,15 +74,14 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                     pred_z = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1]).view(bs * (ss - 1), -1)
                     pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
 
-                    with autocast('cuda', enabled=False):
-                        pred_frame_bce = F.binary_cross_entropy(
-                            pred_frame.view(bs * (ss - 1), 1, h, w).float(),
-                            batch["frames"][:, 1:].contiguous().view(bs * (ss - 1), 1, h, w).float(),
-                            reduction='sum'
-                        ) / (bs * (ss - 1) * h * w)
+                    pred_frame_bce = F.binary_cross_entropy(
+                        pred_frame.view(bs * (ss - 1), 1, h, w).float(),
+                        batch["frames"][:, 1:].contiguous().view(bs * (ss - 1), 1, h, w).float(),
+                        reduction='sum'
+                    ) / (bs * (ss - 1) * h * w)
                     pred_z_seq = pred_z.view(bs, (ss - 1), -1)
                     latent_target = z[:, 1:]
-                    latent_l2 = F.mse_loss(pred_z_seq, latent_target, reduction='mean')
+                    latent_l2 = F.mse_loss(pred_z_seq.float(), latent_target.float(), reduction='mean')
                     loss = recon_weight * pred_frame_bce + latent_weight * latent_l2
 
                 test_loss += loss.item()
