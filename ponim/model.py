@@ -14,6 +14,10 @@ class Ponim(nn.Module):
         self.cog_hidden_size = cog_hidden_size
 
         self.vae = vision.VAE(self.latent_size) if vae is None else vae
+        # Freeze VAE parameters during cognition training; we only backprop to cognition
+        for param in self.vae.parameters():
+            param.requires_grad = False
+        self.vae.eval()
         self.cog = cognition.Cognition(self.cog_hidden_size, self.latent_size, self.device)
 
     @staticmethod
