@@ -6,7 +6,7 @@ from torch import nn
 from torch.nn import functional as F
 from vision import VAE
 
-def train_test(ponim: Ponim, training_batches: torch.Tensor, testing_batches: torch.Tensor, epochs: int):
+def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
     optim = torch.optim.Adam(ponim.parameters(), lr=1e-3)
 
     try:
