@@ -28,10 +28,12 @@ class Cognition(nn.Module):
         o, self.h = self.gru(torch.cat([inputs, prev_lat_frame], dim=-1), self.h)
         o = self.dropout(o)
         o = self.linear_hid_lat(o)
+        o = torch.tanh(o)
 
         return o
 
     def reset(self, batch_size: int):
-        self.h = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
+        #self.h = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
+        self.h = torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device)
 
 

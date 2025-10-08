@@ -2,25 +2,16 @@ import pygame
 import torch
 import os
 
-from cognition import Cognition
-from vision import VAE
+from ponim import Ponim
 
 device = torch.device("cpu")
 
-cog = Cognition(1024, 64, device, num_layers=3).to(device)
-cog.reset(1)
-vae = VAE(64).to(device)
+model = Ponim(64, 256, device)
 
-if os.path.exists("vae.ptm"):
-    vae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
+if os.path.exists("ponim_snapshot.ptm"):
+    model.load_state_dict(torch.load("ponim_snapshot.ptm", weights_only=True, map_location=device))
 else:
     print("No Vision model found, quitting")
-    quit()
-
-if os.path.exists("cog_snapshot.ptm"):
-    cog.load_state_dict(torch.load("cog_snapshot.ptm", weights_only=True, map_location=device))
-else:
-    print("No Cognition model found, quitting")
     quit()
 
 pygame.init()
@@ -35,7 +26,11 @@ rmovement = 0.0
 
 running = True
 
-prev_latent = torch.zeros(1, 1, 64).to(device)
+model.cog.reset(1)
+sequences = torch.load("pongdata.pt")
+inp_frame = sequences[0]["frames"][0].unsqueeze(0).unsqueeze(0)
+prev_latent, _ = model.vae.encoder.encode(inp_frame)
+prev_latent = prev_latent.unsqueeze(0)
 
 while running:
     rmovement = 0
@@ -52,9 +47,11 @@ while running:
                 rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
-    lat = cog.forward(rmt, prev_latent)
+    lat = model.cog.forward(rmt, prev_latent)
     prev_latent = lat.clone().detach()
-    framebuf = vae.decoder.decode(lat).squeeze().squeeze()
+    framebuf = model.vae.decoder.decode(lat).squeeze().squeeze()
+
+    print(framebuf)
 
     for i in range(32):
         for j in range(64):
