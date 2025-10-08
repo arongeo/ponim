@@ -14,6 +14,10 @@ class Ponim(nn.Module):
         self.cog_hidden_size = cog_hidden_size
 
         self.vae = vision.VAE(self.latent_size) if vae is None else vae
+
+        for p in self.vae.parameters():
+            p.requires_grad = False
+
         self.cog = cognition.Cognition(self.cog_hidden_size, self.latent_size, self.device)
 
     @staticmethod
