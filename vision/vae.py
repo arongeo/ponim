@@ -8,6 +8,7 @@ from vision.decoder import Decoder
 class VAE(nn.Module):
     def __init__(self, latent_dim_size):
         super().__init__()
+        self.latent_dim_size = latent_dim_size
 
         # We split the VAE, since, for our purpose,
         # we'll only need the decoder once training

@@ -4,6 +4,7 @@ import torch
 import random
 from torchvision.utils import save_image
 import os
+import ponim
 
 #device = torch.device("cpu")
 device = torch.accelerator.current_accelerator()
@@ -85,8 +86,6 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = cognition.Cognition(512, 5, 64, device)
+ponim_model = ponim.Ponim(vae_model, 256, device)
 
-cognition.train_test(cog, vae_model.encoder, training_batches, testing_batches, 100)
-
-torch.save(cog.state_dict(), "cog.ptm")
+ponim.train_test(ponim_model, training_batches, testing_batches, 100);
