@@ -11,7 +11,8 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
     try:
         for epoch in range(epochs):
-            ponim.train()
+            ponim.vae.eval()
+            ponim.cog.train()
 
             train_loss = 0.0
 
