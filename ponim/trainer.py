@@ -20,10 +20,11 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
                 bs, ss, h, w = batch["frames"].shape
 
-                mu, logvar = ponim.vae.encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
-                std = torch.exp(0.5 * logvar)
-                z = mu + std * torch.randn_like(std)
-                z = z.view(bs, ss, -1)
+                with torch.no_grad():
+                    mu, logvar = ponim.vae.encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
+                    std = torch.exp(0.5 * logvar)
+                    z = mu + std * torch.randn_like(std)
+                    z = z.view(bs, ss, -1)
 
                 pred_z = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1]).view(bs * (ss - 1), -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
@@ -44,10 +45,11 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
                 bs, ss, h, w = batch["frames"].shape
 
-                mu, logvar = ponim.vae.encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
-                std = torch.exp(0.5 * logvar)
-                z = mu + std * torch.randn_like(std)
-                z = z.view(bs, ss, -1)
+                with torch.no_grad():
+                    mu, logvar = ponim.vae.encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
+                    std = torch.exp(0.5 * logvar)
+                    z = mu + std * torch.randn_like(std)
+                    z = z.view(bs, ss, -1)
 
                 pred_z = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1]).view(bs * (ss - 1), -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
