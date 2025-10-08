@@ -86,6 +86,6 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-ponim_model = ponim.Ponim(64, 256, device)
+ponim_model = ponim.Ponim(64, 256, device, vae=vae_model)
 
 ponim.train_test(ponim_model, training_batches, testing_batches, 100);
