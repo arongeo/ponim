@@ -28,6 +28,8 @@ class Cognition(nn.Module):
         o, self.h = self.gru(torch.cat([inputs, prev_lat_frame], dim=-1), self.h)
         o = self.dropout(o)
         o = self.linear_hid_lat(o)
+        # Bound latent outputs to prevent decoder from staying in flat regions
+        o = torch.tanh(o)
 
         return o
 
