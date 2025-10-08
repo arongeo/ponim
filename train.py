@@ -65,7 +65,7 @@ for length, seqs in grouped_seqs.items():
         if len(curr_batch) == 128 or length != prev_length:
             batches.append({
                 "frames": torch.stack([seq["frames"].to(device) for seq in curr_batch]),
-                "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+                "actions": torch.stack([seq["actions"].to(device) for seq in curr_batch]),
                 "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
             })
             curr_batch = []
@@ -75,7 +75,7 @@ for length, seqs in grouped_seqs.items():
 if len(curr_batch) != 0:
     batches.append({
         "frames": torch.stack([seq["frames"].to(device) for seq in curr_batch]),
-        "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+        "actions": torch.stack([seq["actions"].to(device) for seq in curr_batch]),
         "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
     })
 
@@ -86,6 +86,6 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-ponim_model = ponim.Ponim(vae_model.latent_dim_size, 256, device, vae=vae_model)
+ponim_model = ponim.Ponim(64, 256, device)
 
 ponim.train_test(ponim_model, training_batches, testing_batches, 100);

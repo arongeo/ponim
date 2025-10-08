@@ -2,7 +2,7 @@ import vision
 import torch
 from torchvision.utils import save_image
 
-def train_test(model, train_loader, test_loader, epochs):
+def train_test(model, train_loader, test_loader, epochs, beta=1.0):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     for epoch in range(epochs):
@@ -14,7 +14,7 @@ def train_test(model, train_loader, test_loader, epochs):
             optimizer.zero_grad()
 
             reconstruction, mu, logvar = model.forward(batch)
-            loss = vision.VAE.loss(batch, reconstruction, mu, logvar)
+            loss = vision.VAE.loss(batch, reconstruction, mu, logvar, beta=beta)
 
             loss.backward()
             optimizer.step()
@@ -26,7 +26,7 @@ def train_test(model, train_loader, test_loader, epochs):
         with torch.no_grad():
             for batch in test_loader:
                 reconstruction, mu, logvar = model.forward(batch)
-                loss = vision.VAE.loss(batch, reconstruction, mu, logvar)
+                loss = vision.VAE.loss(batch, reconstruction, mu, logvar, beta=beta)
 
                 test_loss += loss.item()
 

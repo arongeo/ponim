@@ -11,8 +11,7 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
     try:
         for epoch in range(epochs):
-            ponim.vae.eval()
-            ponim.cog.train()
+            ponim.train()
 
             train_loss = 0.0
 
@@ -21,45 +20,38 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
                 bs, ss, h, w = batch["frames"].shape
 
-                target_frames = batch["frames"].view(bs * ss, 1, h, w)
+                mu, logvar = ponim.vae.encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
+                std = torch.exp(0.5 * logvar)
+                z = mu + std * torch.randn_like(std)
+                z = z.view(bs, ss, -1)
 
-                with torch.no_grad():
-                    mu, logvar = ponim.vae.encoder.encode(target_frames)
-                    std = torch.exp(0.5 * logvar)
-                    z = mu + std * torch.randn_like(std)
-                    z = z.view(bs, ss, -1)
-
-                pred_z = ponim.cog.forward(batch["actions"])
-                pred_frame = ponim.vae.decoder.decode(pred_z)
-                loss = Ponim.loss(pred_frame, target_frames)
+                pred_z = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1]).view(bs * (ss - 1), -1)
+                pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
+                loss = VAE.loss(pred_frame, batch["frames"][:, 1:], mu, logvar, beta=0.1)
 
                 optim.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(ponim.parameters(), max_norm=1.0)
                 optim.step()
 
                 train_loss += loss
 
             test_loss = 0.0
 
-            ponim.vae.eval()
-            ponim.cog.eval()
             ponim.eval()
             for batch in testing_batches:
                 ponim.cog.reset(batch["actions"].size(0))
 
                 bs, ss, h, w = batch["frames"].shape
 
-                target_frames = batch["frames"].view(bs * ss, 1, h, w)
+                mu, logvar = ponim.vae.encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
+                std = torch.exp(0.5 * logvar)
+                z = mu + std * torch.randn_like(std)
+                z = z.view(bs, ss, -1)
 
-                with torch.no_grad():
-                    mu, logvar = ponim.vae.encoder.encode(target_frames)
-                    std = torch.exp(0.5 * logvar)
-                    z = mu + std * torch.randn_like(std)
-                    z = z.view(bs, ss, -1)
-
-                pred_z = ponim.cog.forward(batch["actions"])
-                pred_frame = ponim.vae.decoder.decode(pred_z)
-                loss = Ponim.loss(pred_frame, target_frames)
+                pred_z = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1]).view(bs * (ss - 1), -1)
+                pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
+                loss = VAE.loss(pred_frame, batch["frames"][:, 1:], mu, logvar, beta=0.1)
 
                 optim.zero_grad()
 
@@ -69,5 +61,5 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
     except KeyboardInterrupt:
         print("Interrupted training")
     finally:
-        torch.save(ponim.state_dict(), "cog_snapshot.ptm")
+        torch.save(ponim.state_dict(), "ponim_snapshot.ptm")
         torch.save(optim.state_dict(), "optim_snapshot.ptm")
