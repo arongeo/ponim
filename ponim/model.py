@@ -21,6 +21,8 @@ class Ponim(nn.Module):
         self.cog = cognition.Cognition(self.cog_hidden_size, self.latent_size, self.device)
 
     @staticmethod
-    def loss(pred_frame: torch.Tensor, target_frame: torch.Tensor) -> torch.Tensor:
-        bs, ss, h, w = pred_frame.shape
-        return F.binary_cross_entropy(pred_frame, target_frame, reduction='mean')
+    def loss(pred_frame: torch.Tensor, target_frame: torch.Tensor, pred_z: torch.Tensor, target_z: torch.Tensor, beta=0.1) -> torch.Tensor:
+        recon_loss = F.binary_cross_entropy(pred_frame, target_frame, reduction='mean')
+        latent_loss = F.mse_loss(pred_z, target_z)
+
+        return recon_loss + latent_loss * 0.1
