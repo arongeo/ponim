@@ -17,21 +17,19 @@ class Cognition(nn.Module):
         self.num_layers = num_layers
         self.latent_dim_size = latent_dim_size
 
-        self.gru = nn.GRU(USER_INPUTS_SIZE + 2 * self.latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
+        #self.gru = nn.GRU(USER_INPUTS_SIZE + 2 * self.latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
 
-        self.dropout = nn.Dropout(0.3)
-        self.layer_norm = nn.LayerNorm(hidden_size)
+        self.linear = nn.Sequential(
+            nn.Linear(USER_INPUTS_SIZE + 2 * self.latent_dim_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, self.latent_dim_size)
+        )
 
-        self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
  
     def forward(self, inputs: torch.Tensor, prev_lat_frame: torch.Tensor, penu_lat_frame) -> torch.Tensor:
-        o, self.h = self.gru(torch.cat([inputs, prev_lat_frame, penu_lat_frame], dim=-1), self.h)
-        o = self.dropout(o)
-        o = self.layer_norm(o)
-        o = self.linear_hid_lat(o)
-        o = torch.tanh(o)
-
-        return o
+        return self.linear(torch.cat([inputs, prev_lat_frame, penu_lat_frame], dim=-1))
 
     def reset(self, batch_size: int):
         #self.h = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1

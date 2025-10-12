@@ -26,11 +26,8 @@ rmovement = 0.0
 
 running = True
 
-model.cog.reset(1)
-sequences = torch.load("pongdata.pt")
-inp_frame = sequences[0]["frames"][0].unsqueeze(0).unsqueeze(0)
-prev_latent, _ = model.vae.encoder.encode(inp_frame)
-prev_latent = prev_latent.unsqueeze(0)
+penu_latent = torch.randn(1, 1, 64) * 0.01
+prev_latent = torch.randn(1, 1, 64) * 0.01
 
 while running:
     rmovement = 0
@@ -47,7 +44,8 @@ while running:
                 rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
-    lat = model.cog.forward(rmt, prev_latent)
+    lat = model.cog.forward(rmt, prev_latent, penu_latent)
+    penu_latent = prev_latent
     prev_latent = lat.clone().detach()
     framebuf = torch.round(model.vae.decoder.decode(lat).squeeze().squeeze())
 

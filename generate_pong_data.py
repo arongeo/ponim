@@ -14,8 +14,13 @@ class Padel:
         self.size = size
         self.vy = 0
         self.vdecay = 0.7
+        self.timeout = 0
 
     def update(self, direction):
+        if (0 < self.timeout):
+            self.timeout -= 1
+            return
+
         self.draw(0)
         self.py += direction
         if direction == 0:
@@ -125,20 +130,25 @@ ball = Ball()
 ERROR_CHANCE = 0.3
 
 def get_ai_direction(padel, volatility, laziness):
+    if (random.random() < 0.2):
+        return 0, 5
+
     if (random.random() < laziness):
-        return 0
+        return 0, 0
     if (random.random() < volatility):
-        return random.choice([-1, 0, 1])
+        return random.choice([-1, 0, 1]), 0
 
     t = ball.py + random.uniform(-ERROR_CHANCE, ERROR_CHANCE)
     if ball.inline_padel(padel):
-        return 0
+        return 0, 0
     elif ball.py < padel.py:
-        return -1
+        return -1, 0
     else:
-        return 1
+        return 1, 0
 
-def update(ldir, rdir):
+def update(ldir, rdir, lto, rto):
+    leftpadel.timeout += lto
+    rightpadel.timeout += rto
     leftpadel.update(ldir)
     rightpadel.update(rdir)
 
@@ -229,10 +239,10 @@ def start(ai_volatility, ai_laziness):
     while running:
         recorder.record_frame(framebuf, ldir, rdir, r)
  
-        ldir = get_ai_direction(leftpadel, ai_volatility, ai_laziness)
-        rdir = get_ai_direction(rightpadel, ai_volatility, ai_laziness)
+        ldir, lto = get_ai_direction(leftpadel, ai_volatility, ai_laziness)
+        rdir, rto = get_ai_direction(rightpadel, ai_volatility, ai_laziness)
 
-        r = update(ldir, rdir)
+        r = update(ldir, rdir, lto, rto)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("python3 generate_pong_data.py")
