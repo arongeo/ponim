@@ -26,11 +26,14 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                     std = torch.exp(0.5 * logvar)
                     z = mu + std * torch.randn_like(std)
                     z = z.view(bs, ss, -1)
+                    z = torch.cat([torch.zeros(bs, 2, z.shape[2]), z], dim=1)
 
-                pred_z_cog_view = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1])
-                pred_z = pred_z_cog_view.view(bs * (ss - 1), -1)
-                pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
-                loss = Ponim.loss(pred_frame, batch["frames"][:, 1:], pred_z_cog_view, z[:, 1:])
+                actions = torch.cat([torch.zeros(bs, 2, batch["actions"].shape[2]), batch["actions"]], dim=1)
+
+                pred_z_cog_view = ponim.cog.forward(actions[:, 1:-1], z[:, 1:-1], z[:, :-2])
+                pred_z = pred_z_cog_view.view(bs * ss, -1)
+                pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, ss, h, w)
+                loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 2:])
 
                 optim.zero_grad()
                 loss.backward()
@@ -52,11 +55,27 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                     std = torch.exp(0.5 * logvar)
                     z = mu + std * torch.randn_like(std)
                     z = z.view(bs, ss, -1)
+                    z = torch.cat([torch.zeros(bs, 2, z.shape[2]), z], dim=1)
+
+                actions = torch.cat([torch.zeros(bs, 2, batch["actions"].shape[2]), batch["actions"]], dim=1)
+
+                pred_z_cog_view = ponim.cog.forward(actions[:, 1:-1], z[:, 1:-1], z[:, :-2])
+                pred_z = pred_z_cog_view.view(bs * ss, -1)
+                pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, ss, h, w)
+                loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 2:])
+
+                '''
+                with torch.no_grad():
+                    mu, logvar = ponim.vae.encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
+                    std = torch.exp(0.5 * logvar)
+                    z = mu + std * torch.randn_like(std)
+                    z = z.view(bs, ss, -1)
 
                 pred_z_cog_view = ponim.cog.forward(batch["actions"][:, :-1], z[:, :-1])
                 pred_z = pred_z_cog_view.view(bs * (ss - 1), -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, (ss - 1), h, w)
                 loss = Ponim.loss(pred_frame, batch["frames"][:, 1:], pred_z_cog_view, z[:, 1:])
+                '''
 
                 optim.zero_grad()
 

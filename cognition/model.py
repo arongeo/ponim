@@ -17,16 +17,17 @@ class Cognition(nn.Module):
         self.num_layers = num_layers
         self.latent_dim_size = latent_dim_size
 
-        self.gru = nn.GRU(USER_INPUTS_SIZE + self.latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
+        self.gru = nn.GRU(USER_INPUTS_SIZE + 2 * self.latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
 
         self.dropout = nn.Dropout(0.3)
         self.layer_norm = nn.LayerNorm(hidden_size)
 
         self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
  
-    def forward(self, inputs: torch.Tensor, prev_lat_frame: torch.Tensor) -> torch.Tensor:
-        o, self.h = self.gru(torch.cat([inputs, prev_lat_frame], dim=-1), self.h)
+    def forward(self, inputs: torch.Tensor, prev_lat_frame: torch.Tensor, penu_lat_frame) -> torch.Tensor:
+        o, self.h = self.gru(torch.cat([inputs, prev_lat_frame, penu_lat_frame], dim=-1), self.h)
         o = self.dropout(o)
+        o = self.layer_norm(o)
         o = self.linear_hid_lat(o)
         o = torch.tanh(o)
 

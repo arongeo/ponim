@@ -6,7 +6,7 @@ from ponim import Ponim
 
 device = torch.device("cpu")
 
-model = Ponim(64, 1024, device)
+model = Ponim(64, 256, device)
 
 if os.path.exists("ponim_snapshot.ptm"):
     model.load_state_dict(torch.load("ponim_snapshot.ptm", weights_only=True, map_location=device))
