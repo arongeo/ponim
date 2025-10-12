@@ -34,7 +34,7 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                 pred_z_cog_view = ponim.cog.forward(actions[:, 4:-1], previous_frames)
                 pred_z = pred_z_cog_view.view(bs * ss, -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, ss, h, w)
-                loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 2:])
+                loss = VAE.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 5:])
 
                 optim.zero_grad()
                 loss.backward()
@@ -64,7 +64,7 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                 pred_z_cog_view = ponim.cog.forward(actions[:, 4:-1], previous_frames)
                 pred_z = pred_z_cog_view.view(bs * ss, -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, ss, h, w)
-                loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 2:])
+                loss = VAE.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 5:])
 
                 '''
                 with torch.no_grad():
