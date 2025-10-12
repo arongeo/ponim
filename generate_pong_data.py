@@ -137,7 +137,7 @@ def get_ai_direction(padel, volatility, laziness):
     if (random.random() < laziness):
         return 0
     if (random.random() < volatility):
-        return random.choice([-1, 0, 1]), 0
+        return random.choice([-1, 0, 1])
 
     t = ball.py + random.uniform(-ERROR_CHANCE, ERROR_CHANCE)
     if ball.inline_padel(padel):
