@@ -56,7 +56,7 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                     std = torch.exp(0.5 * logvar)
                     z = mu + std * torch.randn_like(std)
                     z = z.view(bs, ss, -1)
-                    z = torch.cat([torch.randn(bs, 2, z.shape[2]) * 0.01, z], dim=1)
+                    z = torch.cat([torch.randn(bs, 5, z.shape[2]) * 0.01, z], dim=1)
 
                 actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
                 previous_frames = torch.cat([z[:, 4:-1], z[:, 3:-2], z[:, 2:-3], z[:, 1:-4], z[:, :-5]], dim=-1)

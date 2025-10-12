@@ -26,8 +26,7 @@ rmovement = 0.0
 
 running = True
 
-penu_latent = torch.randn(1, 1, 64) * 0.01
-prev_latent = torch.randn(1, 1, 64) * 0.01
+prev_lat_frames = torch.randn(1, 5, 64) * 0.01
 
 while running:
     rmovement = 0
@@ -44,9 +43,8 @@ while running:
                 rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
-    lat = model.cog.forward(rmt, prev_latent, penu_latent)
-    penu_latent = prev_latent
-    prev_latent = lat.clone().detach()
+    lat = model.cog.forward(rmt, prev_lat_frames.view(1, 1, -1))
+    prev_lat_frames = torch.cat([prev_lat_frames[:, 1:], lat.clone().detach()], dim=1)
     framebuf = torch.round(model.vae.decoder.decode(lat).squeeze().squeeze())
 
     for i in range(32):
