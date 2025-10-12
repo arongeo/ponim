@@ -26,11 +26,13 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                     std = torch.exp(0.5 * logvar)
                     z = mu + std * torch.randn_like(std)
                     z = z.view(bs, ss, -1)
-                    z = torch.cat([torch.zeros(bs, 2, z.shape[2]), z], dim=1)
+                    z = torch.cat([torch.randn(bs, 5, z.shape[2]) * 0.01, z], dim=1)
 
-                actions = torch.cat([torch.zeros(bs, 2, batch["actions"].shape[2]), batch["actions"]], dim=1)
+                actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
 
-                pred_z_cog_view = ponim.cog.forward(actions[:, 1:-1], z[:, 1:-1], z[:, :-2])
+                previous_frames = torch.cat([z[:, 4:-1], z[:, 3:-2], z[2:-3], z[1:-4], z[:, :-5]], dim=1)
+
+                pred_z_cog_view = ponim.cog.forward(actions[:, 1:-1], previous_frames)
                 pred_z = pred_z_cog_view.view(bs * ss, -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, ss, h, w)
                 loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 2:])
@@ -59,7 +61,9 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
                 actions = torch.cat([torch.zeros(bs, 2, batch["actions"].shape[2]), batch["actions"]], dim=1)
 
-                pred_z_cog_view = ponim.cog.forward(actions[:, 1:-1], z[:, 1:-1], z[:, :-2])
+                previous_frames = torch.cat([z[:, 4:-1], z[:, 3:-2], z[2:-3], z[1:-4], z[:, :-5]], dim=1)
+
+                pred_z_cog_view = ponim.cog.forward(actions[:, 1:-1], previous_frames)
                 pred_z = pred_z_cog_view.view(bs * ss, -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, ss, h, w)
                 loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view, z[:, 2:])

@@ -20,7 +20,7 @@ class Cognition(nn.Module):
         #self.gru = nn.GRU(USER_INPUTS_SIZE + 2 * self.latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
 
         self.linear = nn.Sequential(
-            nn.Linear(USER_INPUTS_SIZE + 2 * self.latent_dim_size, hidden_size),
+            nn.Linear(USER_INPUTS_SIZE + 5 * self.latent_dim_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
@@ -28,8 +28,8 @@ class Cognition(nn.Module):
         )
 
  
-    def forward(self, inputs: torch.Tensor, prev_lat_frame: torch.Tensor, penu_lat_frame) -> torch.Tensor:
-        return self.linear(torch.cat([inputs, prev_lat_frame, penu_lat_frame], dim=-1))
+    def forward(self, inputs: torch.Tensor, prev_frames: torch.Tensor) -> torch.Tensor:
+        return self.linear(torch.cat([inputs, prev_frames], dim=-1))
 
     def reset(self, batch_size: int):
         #self.h = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
