@@ -44,7 +44,7 @@ while running:
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
     lat = model.cog.forward(rmt, prev_lat_frames.view(1, 1, -1))
-    prev_lat_frames = torch.cat([prev_lat_frames[:, 1:], lat.clone().detach()], dim=1)
+    prev_lat_frames = torch.cat([lat.clone().detach(), prev_lat_frames[:, 1:]], dim=1)
     framebuf = torch.round(model.vae.decoder.decode(lat).squeeze().squeeze())
 
     for i in range(32):

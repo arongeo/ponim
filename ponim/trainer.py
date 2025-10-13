@@ -83,7 +83,7 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
 
                 test_loss += loss.detach().item()
 
-            print(f"Epoch {epoch + 1} - training loss: {train_loss} - testing loss: {test_loss}")
+            print(f"Epoch {epoch + 1} - training loss: {train_loss/len(testing_batches)} - testing loss: {test_loss/len(testing_batches)}")
     except KeyboardInterrupt:
         print("Interrupted training")
     finally:
