@@ -25,4 +25,7 @@ class Ponim(nn.Module):
         recon_loss = F.binary_cross_entropy(pred_frame, target_frame, reduction='none').sum(dim=(1, 2, 3)).mean()
         lat_loss = F.mse_loss(pred_z, target_z, reduction="mean")
 
+        print(recon_loss * 0.0001)
+        print(lat_loss)
+
         return recon_loss + lat_loss * beta

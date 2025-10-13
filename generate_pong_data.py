@@ -130,7 +130,7 @@ def get_ai_direction(padel, volatility, laziness):
         padel.timeout -= 1
         return 0
 
-    if (random.random() < 0.2):
+    if (random.random() < 0.05):
         padel.timeout += 5
         return 0
 
