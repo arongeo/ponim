@@ -35,7 +35,7 @@ class Cognition(nn.Module):
         self.linear_hid_lat_stdev = nn.Linear(hidden_size, self.latent_dim_size)
  
     def forward(self, inputs: torch.Tensor, prev_frames: torch.Tensor):
-        o, self.h = self.gru(torch.cat([inputs, prev_frames], dim=-1))
+        o, self.h = self.gru(torch.cat([inputs, prev_frames], dim=-1), self.h)
         o = self.dropout(o)
         return self.linear_hid_lat_mean(o), self.linear_hid_lat_stdev(o)
 
