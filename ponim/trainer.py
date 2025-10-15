@@ -32,10 +32,10 @@ def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
                 actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
                 previous_frames = torch.cat([z[:, 4:-1], z[:, 3:-2], z[:, 2:-3], z[:, 1:-4], z[:, :-5]], dim=-1)
 
-                pred_z_cog_view_mean, pred_z_cog_view_stdev = ponim.cog.forward(actions[:, 4:-1], previous_frames)
+                pred_z_cog_view_mean, pred_z_cog_view_logvar = ponim.cog.forward(actions[:, 4:-1], previous_frames)
                 pred_z = pred_z_cog_view_mean.view(bs * ss, -1)
                 pred_frame = ponim.vae.decoder.decode(pred_z).view(bs, ss, h, w)
-                loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view_mean, pred_z_cog_view_stdev, z[:, 5:], logvar)
+                loss = Ponim.loss(pred_frame, batch["frames"], pred_z_cog_view_mean, pred_z_cog_view_logvar, z[:, 5:], logvar)
 
                 optim.zero_grad()
                 loss.backward()
