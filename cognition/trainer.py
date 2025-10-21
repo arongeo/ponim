@@ -28,7 +28,7 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                     mu, logvar = vae_encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
                     #std = torch.exp(0.5 * logvar)
                     #z = mu + std * torch.randn_like(std)
-                    z = z.view(bs, ss, -1)
+                    z = mu.view(bs, ss, -1)
                     z = torch.cat([torch.randn(bs, 5, z.shape[2]) * 0.01, z], dim=1)
 
                 optim.zero_grad()
@@ -58,7 +58,7 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                     mu, logvar = vae_encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
                     #std = torch.exp(0.5 * logvar)
                     #z = mu + std * torch.randn_like(std)
-                    z = z.view(bs, ss, -1)
+                    z = mu.view(bs, ss, -1)
                     z = torch.cat([torch.randn(bs, 5, z.shape[2]) * 0.01, z], dim=1)
 
                 optim.zero_grad()
