@@ -17,7 +17,7 @@ class Cognition(nn.Module):
         self.mixtures = mixtures
         self.latent_dim_size = latent_dim_size
 
-        self.lstm = nn.GRU(USER_INPUTS_SIZE + latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
+        self.lstm = nn.GRU(USER_INPUTS_SIZE + 5 * latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
 
         self.dropout = nn.Dropout(0.3)
         self.layer_norm = nn.LayerNorm(hidden_size)
