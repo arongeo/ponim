@@ -34,7 +34,7 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                 optim.zero_grad()
 
                 actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
-                prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=1)
+                prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=-1)
 
                 mco, mu, stdev = model.forward(actions, prev_frames)
 
@@ -64,7 +64,7 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                 optim.zero_grad()
 
                 actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
-                prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=1)
+                prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=-1)
 
                 mco, mu, stdev = model.forward(actions, prev_frames)
 
