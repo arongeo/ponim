@@ -26,18 +26,19 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                 vae_encoder.eval()
                 with torch.no_grad():
                     mu, logvar = vae_encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
-                    std = torch.exp(0.5 * logvar)
-                    z = mu + std * torch.randn_like(std)
+                    #std = torch.exp(0.5 * logvar)
+                    #z = mu + std * torch.randn_like(std)
                     z = z.view(bs, ss, -1)
-
+                    z = torch.cat([torch.randn(bs, 5, z.shape[2]) * 0.01, z], dim=1)
 
                 optim.zero_grad()
 
-                latinp = torch.cat([torch.zeros(z.shape[0], 1, model.latent_dim_size), z[:, :-1]], dim=1)
+                actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
+                prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=1)
 
-                mco, mu, stdev = model.forward(batch["actions"], latinp)
+                mco, mu, stdev = model.forward(actions, prev_frames)
 
-                loss = Cognition.loss(z, mco, mu, stdev)
+                loss = Cognition.loss(z[:, 5:], mco, mu, stdev)
 
                 loss.backward()
                 optim.step()
@@ -55,22 +56,23 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                 vae_encoder.eval()
                 with torch.no_grad():
                     mu, logvar = vae_encoder.encode(batch["frames"].view(bs * ss, 1, h, w))
-                    std = torch.exp(0.5 * logvar)
-                    z = mu + std * torch.randn_like(std)
+                    #std = torch.exp(0.5 * logvar)
+                    #z = mu + std * torch.randn_like(std)
                     z = z.view(bs, ss, -1)
+                    z = torch.cat([torch.randn(bs, 5, z.shape[2]) * 0.01, z], dim=1)
 
-                #pred_lat = model.forward(batch["actions"])
-                #pred_lat = model.forward(batch["actions"])
-                latinp = torch.cat([torch.zeros(z.shape[0], 1, model.latent_dim_size), z[:, :-1]], dim=1)
-                mco, mu, stdev = model.forward(batch["actions"], latinp)
-                #mco, mu, stdev = model.forward(batch["actions"], torch.cat([torch.zeros(z.shape[0], z.shape[1], 1), z[:, :-1]], dim=-1))
-                #mco, mu, stdev = model.forward(batch["actions"])
+                optim.zero_grad()
 
-                loss = Cognition.loss(z, mco, mu, stdev)
+                actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
+                prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=1)
+
+                mco, mu, stdev = model.forward(actions, prev_frames)
+
+                loss = Cognition.loss(z[:, 5:], mco, mu, stdev)
 
                 test_loss += loss
 
-            print(f"Epoch {epoch + 1} - training loss: {train_loss} - testing loss: {test_loss}")
+            print(f"Epoch {epoch + 1} - training loss: {train_loss/len(training_batches)} - testing loss: {test_loss/len(testing_batches)}")
     except KeyboardInterrupt:
         print("Interrupted training")
     finally:

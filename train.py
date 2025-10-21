@@ -64,7 +64,7 @@ for length, seqs in grouped_seqs.items():
         if len(curr_batch) == 128 or length != prev_length:
             batches.append({
                 "frames": torch.stack([seq["frames"].to(device) for seq in curr_batch]),
-                "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+                "actions": torch.stack([seq["actions"].to(device) for seq in curr_batch]),
                 "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
             })
             curr_batch = []
@@ -74,7 +74,7 @@ for length, seqs in grouped_seqs.items():
 if len(curr_batch) != 0:
     batches.append({
         "frames": torch.stack([seq["frames"].to(device) for seq in curr_batch]),
-        "actions": torch.stack([torch.cat([torch.zeros(1, 2).to(device), seq["actions"][:-1].to(device)]) for seq in curr_batch]),
+        "actions": torch.stack([seq["actions"].to(device) for seq in curr_batch]),
         "results": torch.stack([seq["results"].to(device) for seq in curr_batch]),
     })
 
