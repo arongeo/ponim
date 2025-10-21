@@ -7,9 +7,9 @@ from vision import VAE
 
 device = torch.device("cpu")
 
-cog = Cognition(1024, 64, device, num_layers=3).to(device)
-cog.reset(1)
 vae = VAE(64).to(device)
+cog = Cognition(512, 5, 64, device)
+cog.reset(1)
 
 if os.path.exists("vae.ptm"):
     vae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
@@ -35,7 +35,7 @@ rmovement = 0.0
 
 running = True
 
-prev_latent = torch.zeros(1, 1, 64).to(device)
+prev_lat_frames = torch.randn(1, 5, 64).to(device) * 0.01
 
 while running:
     rmovement = 0
@@ -52,9 +52,10 @@ while running:
                 rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
-    lat = cog.forward(rmt, prev_latent)
-    prev_latent = lat.clone().detach()
-    framebuf = vae.decoder.decode(lat).squeeze().squeeze()
+    mco, lat, stdev = cog.forward(rmt, prev_lat_frames.view(1, 1, -1))
+    most_likely = torch.argmax(mco, dim=-1).squeeze().squeeze().squeeze()
+    prev_lat_frames = torch.cat([lat[:, :, most_likely].clone().detach(), prev_lat_frames[:, :-1]], dim=1)
+    framebuf = vae.decoder.decode(lat[:, :, most_likely]).squeeze().squeeze()
 
     for i in range(32):
         for j in range(64):
