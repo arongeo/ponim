@@ -26,10 +26,8 @@ rmovement = 0.0
 
 running = True
 
-sequences = torch.load("pongdata.pt")
-
-
 '''
+sequences = torch.load("pongdata.pt")
 ctx_frames = sequences[0]["frames"][0:5]
 print(ctx_frames.shape)
 mu, lv = model.vae.encoder.encode(ctx_frames.unsqueeze(1))
@@ -46,16 +44,17 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                rmovement = -1.0
-            if event.key == pygame.K_DOWN:
-                rmovement = 1.0
     
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP]:
+        rmovement = -1.0
+    elif keys[pygame.K_DOWN]:
+        rmovement = 1.0
+
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
     print(rmt)
-    lat, _ = model.cog.forward(rmt, prev_lat_frames.view(1, 1, -1))
-    prev_lat_frames = torch.cat([lat.clone().detach(), prev_lat_frames[:, 1:]], dim=1)
+    lat = model.cog.forward(rmt, prev_lat_frames.view(1, 1, -1))
+    prev_lat_frames = torch.cat([lat.clone().detach(), prev_lat_frames[:, :-1]], dim=1)
     framebuf = torch.round(model.vae.decoder.decode(lat).squeeze().squeeze())
 
     for i in range(32):

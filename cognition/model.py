@@ -22,18 +22,20 @@ class Cognition(nn.Module):
         self.linear = nn.Sequential(
             nn.Linear(USER_INPUTS_SIZE + 5 * self.latent_dim_size, hidden_size),
             nn.ReLU(),
+            nn.Dropout(p=0.3)
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
+            nn.Dropout(p=0.3)
             nn.Linear(hidden_size, hidden_size)
+            nn.ReLU()
+            nn.Dropout(p=0.3)
         )
 
-        self.dropout = nn.Dropout(0.3)
         self.linear_hid_lat_mean = nn.Linear(hidden_size, self.latent_dim_size)
  
     def forward(self, inputs: torch.Tensor, prev_frames: torch.Tensor):
         #o, self.h = self.gru(torch.cat([inputs, prev_frames], dim=-1), self.h)
         o = self.linear(torch.cat([inputs, prev_frames], dim=-1))
-        o = self.dropout(o)
         return self.linear_hid_lat_mean(o)
 
     def reset(self, batch_size: int):
