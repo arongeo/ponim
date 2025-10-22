@@ -28,7 +28,6 @@ class Cognition(nn.Module):
         )
 
         self.dropout = nn.Dropout(0.3)
-
         self.linear_hid_lat_mean = nn.Linear(hidden_size, self.latent_dim_size)
  
     def forward(self, inputs: torch.Tensor, prev_frames: torch.Tensor):
@@ -36,9 +35,8 @@ class Cognition(nn.Module):
         o = self.linear(torch.cat([inputs, prev_frames], dim=-1))
         o = self.dropout(o)
         return self.linear_hid_lat_mean(o)
-        
+
     def reset(self, batch_size: int):
-        #self.h = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device) * 0.1
         self.h = torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device)
 
 
