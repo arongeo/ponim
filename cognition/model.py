@@ -26,7 +26,7 @@ class Cognition(nn.Module):
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Dropout(p=0.3),
-            nn.Linear(hidden_size, hidden_size)
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Dropout(p=0.3),
         )
