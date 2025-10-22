@@ -45,13 +45,17 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                rmovement = -1.0
-            if event.key == pygame.K_DOWN:
-                rmovement = 1.0
+
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP]:
+        rmovement = -1.0
+    elif keys[pygame.K_DOWN]:
+        rmovement = 1.0
     
     rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
+    
+    print(rmt)
+
     mco, lat, stdev = cog.forward(rmt, prev_lat_frames.view(1, 1, -1))
     most_likely = torch.argmax(mco, dim=-1).squeeze().squeeze().squeeze()
     prev_lat_frames = torch.cat([lat[:, :, most_likely].clone().detach(), prev_lat_frames[:, :-1]], dim=1)

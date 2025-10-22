@@ -17,48 +17,24 @@ class Cognition(nn.Module):
         self.mixtures = mixtures
         self.latent_dim_size = latent_dim_size
 
-        self.lstm = nn.GRU(USER_INPUTS_SIZE + 5 * latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
+        self.gru = nn.GRU(USER_INPUTS_SIZE + 5 * latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
 
         self.dropout = nn.Dropout(0.3)
         self.layer_norm = nn.LayerNorm(hidden_size)
 
-        #self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
+        self.linear_hid_lat = nn.Linear(hidden_size, latent_dim_size)
 
-        self.linear_hid_mix = nn.Linear(hidden_size, self.mixtures * (1 + 2 * self.latent_dim_size))
  
     def forward(self, inputs: torch.Tensor, prev_lat_frame: torch.Tensor):
-        o, self.hc = self.lstm(torch.cat([inputs, prev_lat_frame], dim=-1), self.hc)
+        o, self.hc = self.gru(torch.cat([inputs, prev_lat_frame], dim=-1), self.hc)
         o = self.dropout(o)
-        #return self.linear_hid_lat(o)
-        o = self.linear_hid_mix(o)
-
-        mco, mu, stdev = torch.split(o, [
-            self.mixtures,
-            self.mixtures * self.latent_dim_size,
-            self.mixtures * self.latent_dim_size
-        ], dim=-1)
-
-        mu = mu.view(mu.shape[0], mu.shape[1], self.mixtures, self.latent_dim_size)
-        stdev = torch.exp(0.5 * stdev.view(stdev.shape[0], stdev.shape[1], self.mixtures, self.latent_dim_size))
-        mco = mco.unsqueeze(2)
-
-        return mco, mu, stdev
+        return self.linear_hid_lat(o)
 
     def reset(self, batch_size: int):
         self.hc = torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device)
 
     @staticmethod
-    def loss(expected_mu: torch.Tensor, mco: torch.Tensor, mu: torch.Tensor, stdev: torch.Tensor):
-        expected_mu = expected_mu.unsqueeze(2)
-
-        mix_log_prob = Normal(mu, stdev).log_prob(expected_mu)
-        sum_mix_log_prob = mix_log_prob.sum(dim=-1)
-
-        logp_mco = F.log_softmax(mco, dim=-1).squeeze(2)
-
-        return -1.0 * (torch.logsumexp(sum_mix_log_prob + logp_mco, dim=-1).mean())
-
-        #lat_loss = F.mse_loss(predicted_lat_frame, expected_lat_frame)
-
-        #return lat_loss
+    def loss(z: torch.Tensor, target_z: torch.Tensor):
+        lat_loss = F.mse_loss(z, target_z)
+        return lat_loss
 

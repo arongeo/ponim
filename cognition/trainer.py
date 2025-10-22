@@ -36,9 +36,9 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                 actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
                 prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=-1)
 
-                mco, mu, stdev = model.forward(actions[:, 4:-1], prev_frames)
+                z_gen = model.forward(actions[:, 4:-1], prev_frames)
 
-                loss = Cognition.loss(z[:, 5:], mco, mu, stdev)
+                loss = Cognition.loss(z_gen, z[:, 5:])
 
                 loss.backward()
                 optim.step()
@@ -66,9 +66,9 @@ def train_test(model: Cognition, vae_encoder: Encoder, training_batches, testing
                 actions = torch.cat([torch.zeros(bs, 5, batch["actions"].shape[2]), batch["actions"]], dim=1)
                 prev_frames = torch.cat([z[:, :-5], z[:, 1:-4], z[:, 2:-3], z[:, 3:-2], z[:, 4:-1]], dim=-1)
 
-                mco, mu, stdev = model.forward(actions[:, 4:-1], prev_frames)
+                z_gen = model.forward(actions[:, 4:-1], prev_frames)
 
-                loss = Cognition.loss(z[:, 5:], mco, mu, stdev)
+                loss = Cognition.loss(z_gen, z[:, 5:])
 
                 test_loss += loss
 
