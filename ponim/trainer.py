@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from vision import VAE
 
 def train_test(ponim: Ponim, training_batches, testing_batches, epochs: int):
-    optim = torch.optim.Adam(ponim.parameters(), lr=1e-3)
+    optim = torch.optim.AdamW(ponim.parameters(), lr=1e-3)
 
     try:
         for epoch in range(epochs):
