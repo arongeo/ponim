@@ -22,13 +22,13 @@ class Cognition(nn.Module):
         self.linear = nn.Sequential(
             nn.Linear(USER_INPUTS_SIZE + 5 * self.latent_dim_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(p=0.3)
+            nn.Dropout(p=0.3),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(p=0.3)
+            nn.Dropout(p=0.3),
             nn.Linear(hidden_size, hidden_size)
-            nn.ReLU()
-            nn.Dropout(p=0.3)
+            nn.ReLU(),
+            nn.Dropout(p=0.3),
         )
 
         self.linear_hid_lat_mean = nn.Linear(hidden_size, self.latent_dim_size)
