@@ -13,8 +13,8 @@ def train_test(model, train_loader, test_loader, epochs, beta=1.0):
         for batch in train_loader:
             optimizer.zero_grad()
 
-            reconstruction, mu, logvar = model.forward(batch)
-            loss = vision.VAE.loss(batch, reconstruction, mu, logvar, beta=beta)
+            reconstruction, zq, ze = model.forward(batch)
+            loss = vision.VQVAE.loss(batch, reconstruction, zq, ze, beta=beta)
 
             loss.backward()
             optimizer.step()
@@ -25,8 +25,8 @@ def train_test(model, train_loader, test_loader, epochs, beta=1.0):
         test_loss = 0
         with torch.no_grad():
             for batch in test_loader:
-                reconstruction, mu, logvar = model.forward(batch)
-                loss = vision.VAE.loss(batch, reconstruction, mu, logvar, beta=beta)
+                reconstruction, zq, ze = model.forward(batch)
+                loss = vision.VQVAE.loss(batch, reconstruction, zq, ze, beta=beta)
 
                 test_loss += loss.item()
 
@@ -35,8 +35,7 @@ def train_test(model, train_loader, test_loader, epochs, beta=1.0):
 def sample(model, frame, filename):
     model.eval()
     
-    m, lv = model.encoder.encode(frame)
-    z = model.reparameterize(m, lv)
+    reconstruction, zq, ze = model.forward(frame)
 
     save_image(frame.clone().detach().cpu(), filename + "_original.png")
-    save_image(model.decoder.decode(z).clone().detach().cpu(), filename + "_reconstructed.png")
+    save_image(reconstruction.clone().detach().cpu(), filename + "_reconstructed.png")

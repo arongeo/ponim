@@ -1,11 +1,9 @@
 
 import torch
-import torch.utils.data
 from torch import nn
-from torch.nn import functional as F
 
 class Encoder(nn.Module):
-    def __init__(self, latent_dim_size):
+    def __init__(self):
         super().__init__()
 
         self.encoder_conv_layers = nn.Sequential(
@@ -16,8 +14,6 @@ class Encoder(nn.Module):
             nn.Conv2d(64, 128, 4, stride=2, padding=1),
             nn.ReLU(),
         )
-
-        self.flatten = nn.Flatten()
 
         # Very interesting convolutional things going on to end up at 16384
         # We add paddings, so we can have emphasis on the corners as well
@@ -32,14 +28,7 @@ class Encoder(nn.Module):
         # Do this for the height as well, also through all the layers
         # So we end up after the final one with 8x16
         # Multiply that by the output channels, so 8x16x128, and we have 16384
-
-        # Two different linear layers to get to the mean and standard divergence
-        self.encoder_linear_mean = nn.Linear(16384, latent_dim_size)
-        self.encoder_linear_std_logvar = nn.Linear(16384, latent_dim_size)
         
-    def encode(self, input_frame):
-        output = self.flatten(self.encoder_conv_layers(input_frame))
-        mean = self.encoder_linear_mean(output)
-        std_logvar = self.encoder_linear_std_logvar(output)
-
-        return mean, std_logvar
+    def encode(self, input_frame: torch.Tensor) -> torch.Tensor:
+        return self.encoder_conv_layers(input_frame)
+        

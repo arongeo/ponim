@@ -4,7 +4,7 @@ import torch
 import random
 from torchvision.utils import save_image
 import os
-import ponim
+#import ponim
 
 #device = torch.device("cpu")
 device = torch.accelerator.current_accelerator()
@@ -27,9 +27,9 @@ total_frames = len(allframes)
 train_size = int(0.85 * total_frames)
 test_size = total_frames - train_size
 
-vae_model = vision.VAE(64).to(device)
+vae_model = vision.VQVAE(128).to(device)
 
-if os.path.exists("vae.ptm"):
+if False:
     vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
 else:
     train_set, test_set = torch.utils.data.random_split(
@@ -50,6 +50,8 @@ for n in range(10):
     vision.sample(vae_model, allframes[random.randint(0, len(allframes) - 1)].clone().detach().unsqueeze(0), str(n))
 
 del allframes
+
+'''
 
 grouped_seqs = {}
 for sequence in sequences:
@@ -88,4 +90,6 @@ testing_batches = batches[training_testing_split:]
 
 ponim_model = ponim.Ponim(vae_model.latent_dim_size, 256, device, vae=vae_model)
 
-ponim.train_test(ponim_model, training_batches, testing_batches, 100);
+ponim.train_test(ponim_model, training_batches, testing_batches, 100)
+
+'''

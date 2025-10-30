@@ -13,5 +13,5 @@
 #               from a latent vector
 # - trainer.py: contains the training and sampling functions
 
-from vision.vae import VAE
+from vision.vqvae import VQVAE
 from vision.trainer import train_test, sample
