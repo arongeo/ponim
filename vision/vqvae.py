@@ -55,7 +55,7 @@ class VQVAE(nn.Module):
     @staticmethod
     def loss(original, reconstruction, zq, ze, beta=1.0) -> torch.Tensor:
         reconstruction_loss = F.binary_cross_entropy(reconstruction, original, reduction='mean')
-        codebook_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
-        commitment_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
+        codebook_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
+        commitment_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
 
         return reconstruction_loss + codebook_loss + commitment_loss * beta
