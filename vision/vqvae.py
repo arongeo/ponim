@@ -45,7 +45,7 @@ class VQVAE(nn.Module):
         zq = self.quantizer(tokens)
         # Straight-through estimator 
         # (we pass the encoder the same gradients as we have in the decoder)
-        zq = ze + (zq.detach() - ze) # TODO: possible change here, if it doesn't work
+        zq = ze + (zq - ze).detach() # TODO: possible change here, if it doesn't work
 
         reconstruction = self.decoder.decode(zq.view(bs, h, w, cs).permute(0, 3, 1, 2).contiguous())
 
