@@ -29,22 +29,18 @@ class VQVAE(nn.Module):
         # We don't need the spatial information, we just need the encoded data:
         # First put the channel data to the end with permute,
         # then group the batch size, height and width together into one dimension
-        ze = encoded_frame.permute(0, 2, 3, 1).contiguous()
-        ze_flat = ze.reshape(-1, 128)
+        ze = encoded_frame.permute(0, 2, 3, 1).contiguous().view(-1, 128)
         
         # L2 norm:
         #   ||z - e||2 = ∑((z - e)^2) = ∑(z^2) + ∑(e^2) - ∑(2ze)
-        z_norm = torch.sum(ze_flat**2, dim=1, keepdim=True)
-        e_norm = torch.sum(self.quantizer.weight**2, dim=1)
-        dp = 2 * torch.matmul(ze_flat, self.quantizer.weight.t())
+        z_norm = torch.sum(ze**2, dim=1, keepdim=True)
+        e_norm = torch.sum(self.quantizer.weight**2, dim=1).unsqueeze(0)
+        dp = 2 * torch.matmul(ze, self.quantizer.weight.t())
         dist = z_norm + e_norm - dp
         
         # We get the indices/tokens of the closest codebook entries and their values
-        tokens = torch.argmin(dist, dim=1).unsqueeze(1)
-        token_multiplier = torch.zeros(tokens.shape[0], self.codebook_size)
-        token_multiplier.scatter_(1, tokens, 1)
-
-        zq = torch.matmul(token_multiplier, self.quantizer.weight).view(ze.shape)
+        tokens = torch.argmin(dist, dim=1)
+        zq = self.quantizer(tokens)
         
         commitment_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
         codebook_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
@@ -56,6 +52,6 @@ class VQVAE(nn.Module):
         # F-D UP
         zq = ze + (zq - ze).detach()
 
-        reconstruction = self.decoder.decode(zq.permute(0, 3, 1, 2).contiguous())
+        reconstruction = self.decoder.decode(zq.view(encoded_frame.shape).permute(0, 3, 1, 2).contiguous())
 
         return reconstruction, loss
