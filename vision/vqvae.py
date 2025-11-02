@@ -29,7 +29,8 @@ class VQVAE(nn.Module):
         # We don't need the spatial information, we just need the encoded data:
         # First put the channel data to the end with permute,
         # then group the batch size, height and width together into one dimension
-        ze = encoded_frame.permute(0, 2, 3, 1).contiguous().view(-1, 128)
+        ze_permute = encoded_frame.permute(0, 2, 3, 1).contiguous()
+        ze = ze_permute.view(-1, 128)
         
         # L2 norm:
         #   ||z - e||2 = ∑((z - e)^2) = ∑(z^2) + ∑(e^2) - ∑(2ze)
@@ -52,6 +53,6 @@ class VQVAE(nn.Module):
         # F-D UP
         zq = ze + (zq - ze).detach()
 
-        reconstruction = self.decoder.decode(zq.view(encoded_frame.shape).permute(0, 3, 1, 2).contiguous())
+        reconstruction = self.decoder.decode(zq.view(ze_permute.shape).permute(0, 3, 1, 2).contiguous())
 
         return reconstruction, loss
