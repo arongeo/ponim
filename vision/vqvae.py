@@ -1,5 +1,5 @@
+
 import torch
-import torch.utils.data
 from torch import nn
 from torch.nn import functional as F
 from vision.encoder import Encoder
@@ -43,14 +43,15 @@ class VQVAE(nn.Module):
         tokens = torch.argmin(dist, dim=1)
         zq = self.quantizer(tokens)
         
+        # We need to calculate the losses before the STE, because
+        # with the STE (below) we detach zq from the graph completely, and thus
+        # the autograd engine will pretty much think all these losses came from ze.
         commitment_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
         codebook_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
         loss = codebook_loss + commitment_loss * beta
 
         # Straight-through estimator 
         # (we pass the encoder the same gradients as we have in the decoder)
-        # ORDER MATTERS HERE! IF WE CALCULATE THE LOSSES AFTER IT WILL BE VERY
-        # F-D UP
         zq = ze + (zq - ze).detach()
 
         reconstruction = self.decoder.decode(zq.view(ze_permute.shape).permute(0, 3, 1, 2).contiguous())
