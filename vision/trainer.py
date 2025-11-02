@@ -1,8 +1,9 @@
 import vision
 import torch
+from torch.nn import functional as F
 from torchvision.utils import save_image
 
-def train_test(model, train_loader, test_loader, epochs, beta=1.0):
+def train_test(model, train_loader, test_loader, epochs, beta=0.25):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     for epoch in range(epochs):
@@ -13,8 +14,8 @@ def train_test(model, train_loader, test_loader, epochs, beta=1.0):
         for batch in train_loader:
             optimizer.zero_grad()
 
-            reconstruction, zq, ze = model.forward(batch)
-            loss = vision.VQVAE.loss(batch, reconstruction, zq, ze, beta=beta)
+            reconstruction, loss = model.train_forward(batch, beta=beta)
+            loss += F.binary_cross_entropy(reconstruction, batch, reduction='mean')
 
             loss.backward()
             optimizer.step()
@@ -25,8 +26,8 @@ def train_test(model, train_loader, test_loader, epochs, beta=1.0):
         test_loss = 0
         with torch.no_grad():
             for batch in test_loader:
-                reconstruction, zq, ze = model.forward(batch)
-                loss = vision.VQVAE.loss(batch, reconstruction, zq, ze, beta=beta)
+                reconstruction, loss = model.train_forward(batch, beta=beta)
+                loss += F.binary_cross_entropy(reconstruction, batch, reduction='mean')
 
                 test_loss += loss.item()
 
@@ -35,7 +36,7 @@ def train_test(model, train_loader, test_loader, epochs, beta=1.0):
 def sample(model, frame, filename):
     model.eval()
     
-    reconstruction, zq, ze = model.forward(frame)
+    reconstruction, _ = model.train_forward(frame)
 
     save_image(frame.clone().detach().cpu(), filename + "_original.png")
     save_image(reconstruction.clone().detach().cpu(), filename + "_reconstructed.png")

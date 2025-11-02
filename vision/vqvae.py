@@ -23,7 +23,7 @@ class VQVAE(nn.Module):
 
         self.decoder = Decoder()
 
-    def forward(self, input_frame):
+    def train_forward(self, input_frame, beta=0.25):
         encoded_frame = self.encoder.encode(input_frame)
 
         # We don't need the spatial information, we just need the encoded data:
@@ -35,30 +35,27 @@ class VQVAE(nn.Module):
         # L2 norm:
         #   ||z - e||2 = ∑((z - e)^2) = ∑(z^2) + ∑(e^2) - ∑(2ze)
         z_norm = torch.sum(ze_flat**2, dim=1, keepdim=True)
-        e_norm = torch.sum(self.quantizer.weight**2, dim=1).unsqueeze(0)
+        e_norm = torch.sum(self.quantizer.weight**2, dim=1)
         dp = 2 * torch.matmul(ze_flat, self.quantizer.weight.t())
         dist = z_norm + e_norm - dp
         
         # We get the indices/tokens of the closest codebook entries and their values
-        tokens = torch.argmin(dist, dim=1)
+        tokens = torch.argmin(dist, dim=1).unsqueeze(1)
         token_multiplier = torch.zeros(tokens.shape[0], self.codebook_size)
         token_multiplier.scatter_(1, tokens, 1)
 
         zq = torch.matmul(token_multiplier, self.quantizer.weight).view(ze.shape)
+        
+        commitment_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
+        codebook_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
+        loss = codebook_loss + commitment_loss * beta
 
         # Straight-through estimator 
         # (we pass the encoder the same gradients as we have in the decoder)
-        zq = ze + (zq - ze).detach() # TODO: possible change here, if it doesn't work
+        # ORDER MATTERS HERE! IF WE CALCULATE THE LOSSES AFTER IT WILL BE VERY
+        # F-D UP
+        zq = ze + (zq - ze).detach()
 
         reconstruction = self.decoder.decode(zq.permute(0, 3, 1, 2).contiguous())
 
-        return reconstruction, zq, ze
-
-
-    @staticmethod
-    def loss(original, reconstruction, zq, ze, beta=1.0) -> torch.Tensor:
-        reconstruction_loss = F.binary_cross_entropy(reconstruction, original, reduction='mean')
-        codebook_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
-        commitment_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
-
-        return reconstruction_loss + codebook_loss + commitment_loss * beta
+        return reconstruction, loss
