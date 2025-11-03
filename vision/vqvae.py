@@ -10,7 +10,7 @@ class VQVAE(nn.Module):
         super().__init__()
         self.codebook_size = codebook_size
         # For a 64x32 pixel frame, we'll get back
-        # a 128 channel convolution
+        # a 128 channel convolution (bs, cs, h, w)
         self.latent_dim_size = 128 
 
         # We split the VAE, since, for our purpose,
@@ -22,6 +22,25 @@ class VQVAE(nn.Module):
         self.quantizer.weight.data.uniform_(-1.0 / codebook_size, 1.0 / codebook_size)
 
         self.decoder = Decoder()
+
+    def encode(self, input_frame):
+        encoded_frame = self.encoder.encode(input_frame)
+        ze_permute = encoded_frame.permute(0, 2, 3, 1).contiguous()
+        self.permute_shape = ze_permute.shape
+        ze = ze_permute.view(-1, 128)
+        
+        # L2 norm:
+        #   ||z - e||2 = ∑((z - e)^2) = ∑(z^2) + ∑(e^2) - ∑(2ze)
+        z_norm = torch.sum(ze**2, dim=1, keepdim=True)
+        e_norm = torch.sum(self.quantizer.weight**2, dim=1).unsqueeze(0)
+        dp = 2 * torch.matmul(ze, self.quantizer.weight.t())
+        dist = z_norm + e_norm - dp
+        
+        # We get the indices/tokens of the closest codebook entries and their values
+        return torch.argmin(dist, dim=1)
+
+    def decode(self, tokens):
+        return self.decoder.decode(self.quantizer(tokens).view(self.permute_shape).permute(0, 3, 1, 2).contiguous())
 
     def train_forward(self, input_frame, beta=0.25):
         encoded_frame = self.encoder.encode(input_frame)
