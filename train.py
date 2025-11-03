@@ -27,9 +27,9 @@ total_frames = len(allframes)
 train_size = int(0.85 * total_frames)
 test_size = total_frames - train_size
 
-vae_model = vision.VQVAE(128).to(device)
+vae_model = vision.VQVAE(8).to(device)
 
-if False:
+if os.path.exists("vae.ptm"):
     vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
 else:
     train_set, test_set = torch.utils.data.random_split(

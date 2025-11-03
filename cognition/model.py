@@ -8,16 +8,24 @@ USER_INPUTS_SIZE = 2        # left paddle input, right paddle input
 POSSIBLE_RESULTS_SIZE = 3   # 3 possible outcomes, game continues, left wins, right wins
 
 class Cognition(nn.Module):
-    def __init__(self, hidden_size, latent_dim_size, device, num_layers=1):
+    def __init__(self, hidden_size, latent_dim_size, codebook_size, device, num_layers=1):
         super().__init__()
 
         self.hid_size = hidden_size
         self.device = device
         self.num_layers = num_layers
         self.latent_dim_size = latent_dim_size
+        self.codebook_size = codebook_size
 
-        #self.gru = nn.GRU(USER_INPUTS_SIZE + 5 * self.latent_dim_size, hidden_size, batch_first=True, num_layers=num_layers, dropout=(0.3 if 1 < num_layers else 0.0))
+        self.gru = nn.GRU(
+            USER_INPUTS_SIZE + self.latent_dim_size * self.codebook_size,
+            hidden_size,
+            batch_first=True,
+            num_layers=num_layers,
+            dropout=(0.3 if 1 < num_layers else 0.0)
+        )
 
+        '''
         self.linear = nn.Sequential(
             nn.Linear(USER_INPUTS_SIZE + 5 * self.latent_dim_size, hidden_size),
             nn.ReLU(),
@@ -29,13 +37,12 @@ class Cognition(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=0.3),
         )
+        '''
 
-        self.linear_hid_lat_mean = nn.Linear(hidden_size, self.latent_dim_size)
+        self.linear_hid_token = nn.Linear(hidden_size, self.codebook_size * self.latent_dim_size)
  
-    def forward(self, inputs: torch.Tensor, prev_frames: torch.Tensor):
-        #o, self.h = self.gru(torch.cat([inputs, prev_frames], dim=-1), self.h)
-        o = self.linear(torch.cat([inputs, prev_frames], dim=-1))
-        return self.linear_hid_lat_mean(o)
+    def forward(self, inputs: torch.Tensor, prev_frame_tokens: torch.Tensor):
+        o, self.h = self.gru(torch.cat([inputs, prev_frame_tokens], dim=-1), self.h)
 
     def reset(self, batch_size: int):
         self.h = torch.zeros(self.num_layers, batch_size, self.hid_size).to(self.device)

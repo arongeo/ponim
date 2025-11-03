@@ -25,6 +25,9 @@ class VQVAE(nn.Module):
 
     def encode(self, input_frame):
         encoded_frame = self.encoder.encode(input_frame)
+
+        bs = encoded_frame.shape[0]
+
         ze_permute = encoded_frame.permute(0, 2, 3, 1).contiguous()
         self.permute_shape = ze_permute.shape
         ze = ze_permute.view(-1, 128)
@@ -37,10 +40,10 @@ class VQVAE(nn.Module):
         dist = z_norm + e_norm - dp
         
         # We get the indices/tokens of the closest codebook entries and their values
-        return torch.argmin(dist, dim=1)
+        return torch.argmin(dist, dim=1).reshape(bs, -1)
 
     def decode(self, tokens):
-        return self.decoder.decode(self.quantizer(tokens).view(self.permute_shape).permute(0, 3, 1, 2).contiguous())
+        return self.decoder.decode(self.quantizer(tokens.view(-1)).view(self.permute_shape).permute(0, 3, 1, 2).contiguous())
 
     def train_forward(self, input_frame, beta=0.25):
         encoded_frame = self.encoder.encode(input_frame)
