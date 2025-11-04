@@ -33,13 +33,13 @@ def train_test(model, train_loader, test_loader, epochs, beta=0.25):
 
         print(f"Epoch {epoch + 1} - training loss: {train_loss/len(train_loader.dataset)} - testing loss: {test_loss/len(test_loader.dataset)}")
 
-def sample(model, frame, filename):
+def sample(model, frame):
     model.eval()
 
     tokens = model.encode(frame)
     reconstruction = model.decode(tokens)
 
-    print(tokens)
-
-    save_image(frame.clone().detach().cpu(), filename + "_original.png")
-    save_image(reconstruction.clone().detach().cpu(), filename + "_reconstructed.png")
+    for i in range(tokens.shape[0]):
+        print(tokens[i])
+        save_image(frame[i].clone().detach().cpu(), str(i) + "_original.png")
+        save_image(reconstruction[i].clone().detach().cpu(), str(i) + "_reconstructed.png")
