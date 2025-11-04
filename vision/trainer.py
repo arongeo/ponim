@@ -40,6 +40,5 @@ def sample(model, frame):
     reconstruction = model.decode(tokens)
 
     for i in range(tokens.shape[0]):
-        print(tokens[i])
         save_image(frame[i].clone().detach().cpu(), str(i) + "_original.png")
         save_image(reconstruction[i].clone().detach().cpu(), str(i) + "_reconstructed.png")

@@ -1,9 +1,12 @@
+from cognition.model import Cognition
 import vision
 import cognition
 import torch
 import random
 from torchvision.utils import save_image
 import os
+
+from vision.trainer import train_test
 #import ponim
 
 #device = torch.device("cpu")
@@ -27,10 +30,10 @@ total_frames = len(allframes)
 train_size = int(0.85 * total_frames)
 test_size = total_frames - train_size
 
-vae_model = vision.VQVAE(8).to(device)
+vqvae = vision.VQVAE(8).to(device)
 
 if os.path.exists("vae.ptm"):
-    vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
+    vqvae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
 else:
     train_set, test_set = torch.utils.data.random_split(
         allframes, 
@@ -43,17 +46,15 @@ else:
 
     print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
 
-    vision.train_test(vae_model, train_loader, test_loader, 10, beta=0.5)
-    torch.save(vae_model.state_dict(), "vae.ptm")
+    vision.train_test(vqvae, train_loader, test_loader, 10, beta=0.5)
+    torch.save(vqvae.state_dict(), "vae.ptm")
 
 random.shuffle(allframes)
 num_frames = 10
 rand_i = random.randint(0, len(allframes) - 1 - num_frames)
-vision.sample(vae_model, torch.Tensor(allframes[rand_i:rand_i+num_frames]).clone().detach())
+vision.sample(vqvae, torch.Tensor(allframes[rand_i:rand_i+num_frames]).clone().detach())
 
 del allframes
-
-'''
 
 grouped_seqs = {}
 for sequence in sequences:
@@ -90,8 +91,6 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-ponim_model = ponim.Ponim(vae_model.latent_dim_size, 256, device, vae=vae_model)
+cog = Cognition(128, 128, vqvae.codebook_size, device)
 
-ponim.train_test(ponim_model, training_batches, testing_batches, 100)
-
-'''
+cognition.train_test(cog, vqvae, training_batches, testing_batches, 100)

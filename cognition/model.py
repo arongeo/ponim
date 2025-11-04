@@ -8,7 +8,7 @@ USER_INPUTS_SIZE = 2        # left paddle input, right paddle input
 POSSIBLE_RESULTS_SIZE = 3   # 3 possible outcomes, game continues, left wins, right wins
 
 class Cognition(nn.Module):
-    def __init__(self, hidden_size, latent_dim_size, codebook_size, device, num_layers=1):
+    def __init__(self, hidden_size: int, latent_dim_size: int, codebook_size: int, device, num_layers=1):
         super().__init__()
 
         self.hid_size = hidden_size
