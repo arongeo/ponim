@@ -39,5 +39,7 @@ def sample(model, frame, filename):
     tokens = model.encode(frame)
     reconstruction = model.decode(tokens)
 
+    print(tokens)
+
     save_image(frame.clone().detach().cpu(), filename + "_original.png")
     save_image(reconstruction.clone().detach().cpu(), filename + "_reconstructed.png")

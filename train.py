@@ -27,7 +27,7 @@ total_frames = len(allframes)
 train_size = int(0.85 * total_frames)
 test_size = total_frames - train_size
 
-vae_model = vision.VQVAE(8).to(device)
+vae_model = vision.VQVAE(12).to(device)
 
 if os.path.exists("vae.ptm"):
     vae_model.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
@@ -43,7 +43,7 @@ else:
 
     print("training on:", len(train_set), "frames - testing on:", len(test_set), "frames")
 
-    vision.train_test(vae_model, train_loader, test_loader, 10, beta=0.1)
+    vision.train_test(vae_model, train_loader, test_loader, 10, beta=0.25)
     torch.save(vae_model.state_dict(), "vae.ptm")
 
 for n in range(10):

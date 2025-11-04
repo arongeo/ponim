@@ -68,8 +68,8 @@ class VQVAE(nn.Module):
         # We need to calculate the losses before the STE, because
         # with the STE (below) we detach zq from the graph completely, and thus
         # the autograd engine will pretty much think all these losses came from ze.
-        commitment_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
-        codebook_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
+        codebook_loss = F.mse_loss(zq, ze.detach(), reduction='mean')
+        commitment_loss = F.mse_loss(zq.detach(), ze, reduction='mean')
         loss = codebook_loss + commitment_loss * beta
 
         # Straight-through estimator 
