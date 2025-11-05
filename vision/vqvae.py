@@ -10,15 +10,16 @@ class VQVAE(nn.Module):
         super().__init__()
         self.codebook_size = codebook_size
         # For a 64x32 pixel frame, we'll get back
-        # a 128 channel convolution (bs, cs, h, w)
-        self.latent_dim_size = 128 
+        # 16x8 times 64 channels
+        self.channels = 64
+        self.latent_dim_size = 128
 
         # We split the VAE, since, for our purpose,
         # we'll only need the decoder once training
         # is done.
         self.encoder = Encoder()
 
-        self.quantizer = nn.Embedding(codebook_size, 128)
+        self.quantizer = nn.Embedding(codebook_size, self.channels)
         self.quantizer.weight.data.uniform_(-1.0 / codebook_size, 1.0 / codebook_size)
 
         self.decoder = Decoder()
@@ -30,7 +31,7 @@ class VQVAE(nn.Module):
 
         ze_permute = encoded_frame.permute(0, 2, 3, 1).contiguous()
         self.permute_shape = ze_permute.shape
-        ze = ze_permute.view(-1, 128)
+        ze = ze_permute.view(-1, self.channels)
         
         # L2 norm:
         #   ||z - e||2 = ∑((z - e)^2) = ∑(z^2) + ∑(e^2) - ∑(2ze)
@@ -52,7 +53,7 @@ class VQVAE(nn.Module):
         # First put the channel data to the end with permute,
         # then group the batch size, height and width together into one dimension
         ze_permute = encoded_frame.permute(0, 2, 3, 1).contiguous()
-        ze = ze_permute.view(-1, 128)
+        ze = ze_permute.view(-1, self.channels)
         
         # L2 norm:
         #   ||z - e||2 = ∑((z - e)^2) = ∑(z^2) + ∑(e^2) - ∑(2ze)
