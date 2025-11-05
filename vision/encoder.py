@@ -9,9 +9,9 @@ class Encoder(nn.Module):
         self.encoder_conv_layers = nn.Sequential(
             nn.Conv2d(1, 32, 3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(32, 64, 4, stride=2, padding=1),
+            nn.Conv2d(32, 128, 4, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(64, 64, 4, stride=2, padding=1),
+            nn.Conv2d(128, 64, 4, stride=2, padding=1),
             nn.ReLU(),
         )
 

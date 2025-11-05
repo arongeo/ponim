@@ -30,7 +30,7 @@ total_frames = len(allframes)
 train_size = int(0.85 * total_frames)
 test_size = total_frames - train_size
 
-vqvae = vision.VQVAE(8).to(device)
+vqvae = vision.VQVAE(16).to(device)
 
 if os.path.exists("vae.ptm"):
     vqvae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
@@ -53,6 +53,8 @@ random.shuffle(allframes)
 num_frames = 10
 rand_i = random.randint(0, len(allframes) - 1 - num_frames)
 vision.sample(vqvae, torch.Tensor(allframes[rand_i:rand_i+num_frames]).clone().detach())
+
+quit()
 
 del allframes
 

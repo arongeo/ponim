@@ -9,9 +9,9 @@ class Decoder(nn.Module):
         # to do a deconvolution
 
         self.decoder_deconv_layers = nn.Sequential(
-            nn.ConvTranspose2d(64, 64, 4, stride=2, padding=1),
+            nn.ConvTranspose2d(64, 128, 4, stride=2, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 32, 4, stride=2, padding=1),
             nn.ReLU(),
             nn.ConvTranspose2d(32, 1, 3, stride=1, padding=1),
             nn.Sigmoid(),
