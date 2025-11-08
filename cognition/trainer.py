@@ -9,47 +9,53 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
     
     optim = torch.optim.Adam(cognition.parameters(), lr=1e-3)
 
-    for epoch in range(epochs):
-        training_loss = 0
+    try:
+        for epoch in range(epochs):
+            training_loss = 0
 
-        cognition.train()
-        for batch in training_batches:
-            bs, ss, h, w = batch["frames"].shape
+            cognition.train()
+            for batch in training_batches:
+                bs, ss, h, w = batch["frames"].shape
 
-            cognition.reset(bs)
+                cognition.reset(bs)
 
-            tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
+                tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
 
-            tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
-            actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
+                tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
+                actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
-            pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1])
+                pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1])
 
-            loss = Cognition.loss(pred_tokens, tokens)
-            
-            optim.zero_grad()
-            loss.backward()
-            optim.step()
+                loss = Cognition.loss(pred_tokens, tokens)
+                
+                optim.zero_grad()
+                loss.backward()
+                optim.step()
 
-            training_loss += loss
+                training_loss += loss
 
-        testing_loss = 0
+            testing_loss = 0
 
-        cognition.eval()
-        for batch in testing_batches:
-            bs, ss, h, w = batch["frames"].shape
+            cognition.eval()
+            for batch in testing_batches:
+                bs, ss, h, w = batch["frames"].shape
 
-            cognition.reset(bs)
+                cognition.reset(bs)
 
-            tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
+                tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
 
-            tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
-            actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
+                tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
+                actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
-            pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1])
+                pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1])
 
-            loss = Cognition.loss(pred_tokens, tokens)
+                loss = Cognition.loss(pred_tokens, tokens)
 
-            testing_loss += loss
+                testing_loss += loss
 
-        print(f"Epoch {epoch + 1} - training loss: {training_loss/len(training_batches)} - testing loss: {testing_loss/len(testing_batches)}")
+            print(f"Epoch {epoch + 1} - training loss: {training_loss/len(training_batches)} - testing loss: {testing_loss/len(testing_batches)}")
+
+    except KeyboardInterrupt:
+        print("Training interrupted")
+    finally:
+        torch.save(cognition.state_dict(), "cog.ptm")
