@@ -8,7 +8,6 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
     vqvae.eval()
     
     optim = torch.optim.Adam(cognition.parameters(), lr=1e-3)
-    empty_frame_tokens = vqvae.encode(torch.zeros(1, 1, 32, 64)).int().view(1, 1, -1)
 
     for epoch in range(epochs):
         training_loss = 0
@@ -19,13 +18,10 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
 
             cognition.reset(bs)
 
-            tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).int().view(bs, ss, -1)
+            tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
 
-            tcog = torch.cat([empty_frame_tokens, tokens], dim=1)
+            tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
             actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
-
-            print(tcog.shape)
-            print(actions.shape)
 
             pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1])
 
@@ -45,9 +41,9 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
 
             cognition.reset(bs)
 
-            tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).int().view(bs, ss, -1)
+            tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
 
-            tcog = torch.cat([empty_frame_tokens, tokens], dim=1)
+            tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
             actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
             pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1])
