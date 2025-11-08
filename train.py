@@ -54,8 +54,6 @@ num_frames = 10
 rand_i = random.randint(0, len(allframes) - 1 - num_frames)
 vision.sample(vqvae, torch.Tensor(allframes[rand_i:rand_i+num_frames]).clone().detach())
 
-quit()
-
 del allframes
 
 grouped_seqs = {}
@@ -93,6 +91,6 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = Cognition(128, 128, vqvae.codebook_size, device)
+cog = Cognition(128, 128, vqvae.codebook_size, vqvae.quantizer, device)
 
 cognition.train_test(cog, vqvae, training_batches, testing_batches, 100)
