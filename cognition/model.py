@@ -47,8 +47,8 @@ class Cognition(nn.Module):
     @staticmethod
     def loss(generated_tokens, original_tokens):
         return F.cross_entropy(
-            generated_tokens,
-            original_tokens
+            generated_tokens.view(-1, generated_tokens.shape[-1]),
+            original_tokens.view(-1)
         )
 
 

@@ -24,6 +24,9 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
             tcog = torch.cat([empty_frame_tokens, tokens], dim=1)
             actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
+            print(tcog.shape)
+            print(actions.shape)
+
             pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1])
 
             loss = Cognition.loss(pred_tokens, tokens)
