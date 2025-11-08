@@ -38,8 +38,12 @@ class Cognition(nn.Module):
         
         o, self.h = self.gru(torch.cat([inputs, embeddings.flatten(2)], dim=-1), self.h)
         o = self.linear_hid_token(o)
+        o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
-        return o.view(bs, ss, self.latent_dim_size, self.codebook_size)
+        if self.training:
+            return o
+        else:
+            return torch.argmax(o, dim=-1)
 
     def reset(self, batch_size: int):
         self.h = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device)
