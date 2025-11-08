@@ -22,6 +22,9 @@ else:
     print("No Vision model found, quitting")
     quit()
 
+cog.eval()
+vqvae.eval()
+
 pygame.init()
 screen = pygame.display.set_mode((640, 320))
 clock = pygame.time.Clock()
@@ -42,7 +45,7 @@ mu, lv = model.vae.encoder.encode(ctx_frames.unsqueeze(1))
 print(mu.shape)
 prev_lat_frames = mu.unsqueeze(0)
 '''
-prev_lat_frame = torch.zeros(1, 1, 128)
+prev_lat_frame = vqvae.encode(torch.zeros(1, 1, 32, 64)).long().view(1, 1, -1)
 cog.reset(1)
 
 while running:
@@ -60,10 +63,10 @@ while running:
     elif keys[pygame.K_DOWN]:
         rmovement = 1.0
 
-    rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
+    rmt = torch.Tensor([[[0.0, rmovement * 1000]]]).to(device)
     print(rmt)
     lat = cog.forward(rmt, prev_lat_frame.view(1, 1, -1))
-    prev_lat_frames = lat.clone.detach()
+    prev_lat_frame = lat.clone().detach()
     framebuf = torch.round(vqvae.decode(lat).squeeze().squeeze())
 
     for i in range(32):
