@@ -63,7 +63,7 @@ while running:
     elif keys[pygame.K_DOWN]:
         rmovement = 1.0
 
-    rmt = torch.Tensor([[[0.0, rmovement * 100]]]).to(device)
+    rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
     print(rmt)
     lat = cog.forward(rmt, prev_lat_frame.view(1, 1, -1))
     prev_lat_frame = lat.clone().detach()
