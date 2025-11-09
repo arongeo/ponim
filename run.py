@@ -8,7 +8,7 @@ import vision
 device = torch.device("cpu")
 
 vqvae = vision.VQVAE(16).to(device)
-cog = cognition.Cognition(128, vqvae, device)
+cog = cognition.Cognition(512, vqvae, device)
 
 if os.path.exists("vae.ptm"):
     vqvae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
@@ -50,6 +50,7 @@ cog.reset(1)
 
 while running:
     rmovement = 0
+    lmovement = 0
 
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -62,8 +63,12 @@ while running:
         rmovement = -1.0
     elif keys[pygame.K_DOWN]:
         rmovement = 1.0
+    elif keys[pygame.K_w]:
+        lmovement = -1.0
+    elif keys[pygame.K_r]:
+        lmovement = 1.0
 
-    rmt = torch.Tensor([[[0.0, rmovement]]]).to(device)
+    rmt = torch.Tensor([[[lmovement, rmovement]]]).to(device)
     print(rmt)
     lat = cog.forward(rmt, prev_lat_frame.view(1, 1, -1))
     prev_lat_frame = lat.clone().detach()
