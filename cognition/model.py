@@ -38,7 +38,7 @@ class Cognition(nn.Module):
         with torch.no_grad():
             embeddings = self.quantizer(prev_frame_tokens)
         
-        o, self.h = self.gru(torch.cat([inputs.repeat_interleave(self.codebook_size, -1), embeddings.flatten(2)], dim=-1), self.h)
+        o, self.h = self.gru(torch.cat([inputs.repeat_interleave(self.quantizer.embedding_dim, -1), embeddings.flatten(2)], dim=-1), self.h)
         o = self.linear_hid_token(o)
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 

@@ -8,7 +8,7 @@ import vision
 device = torch.device("cpu")
 
 vqvae = vision.VQVAE(16).to(device)
-cog = cognition.Cognition(512, vqvae, device)
+cog = cognition.Cognition(128, vqvae, device)
 
 if os.path.exists("vae.ptm"):
     vqvae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))

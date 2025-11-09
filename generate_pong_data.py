@@ -63,6 +63,7 @@ class Ball:
     def inline_padel(self, padel, extend=0):
         return padel.py - extend <= self.py and self.py <= (padel.py + padel.size - 1) + extend
 
+    # I'm so sorry...
     def update(self):
         global running
 
@@ -243,18 +244,46 @@ def start(ai_volatility, ai_laziness):
 
         r = update(ldir, rdir)
 
+def start_padel_gameplay():
+    global framebuf, leftpadel, rightpadel, running, recorder
+    framebuf = torch.zeros((32, 64))
+    leftpadel = Padel(14, 2, 5)
+    rightpadel = Padel(14, 61, 5)
+    leftpadel.draw(1)
+    rightpadel.draw(1)
+    running = True
+
+    ldir = 0
+    rdir = 0
+
+    while running:
+        recorder.record_frame(framebuf, ldir, rdir, 0)
+
+        ldir = random.choice([-1, 0, 1])
+        rdir = random.choice([-1, 0, 1])
+
+        leftpadel.update(ldir)
+        rightpadel.update(rdir)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("python3 generate_pong_data.py")
     parser.add_argument("frames", help="The amount of frames the script should generate.", nargs='?', type=int, const=150000, default=150000)
     parser.add_argument("volatility", help="The chance the AI behaves in a random way (per frame).", nargs='?', type=float, const=0.5, default=0.5)
     parser.add_argument("laziness", help="The chance the AI doesn't move at all (per frame).", nargs='?', type=float, const=0.3, default=0.3)
     parser.add_argument("sequence_max_frames", help="The maximum amount of frames in a sequence.", nargs='?', type=float, const=500, default=500)
+    parser.add_argument("just_paddles", help="The amount of frames, which only consist of paddles moving around randomly, with no ball. (In percentage)", nargs='?', type=float, const=20, default=20)
     args = parser.parse_args()
     
     print(f"Generating {args.frames} frames of Pong data")
 
     recorder = Recorder(args.sequence_max_frames)
 
+    while recorder.all_frames < int(args.frames * float(args.just_paddles / 100.0)):
+        start_padel_gameplay()
+        if len(recorder.sequences) % 20 == 0:
+            print("new padel game; sequences:", str(len(recorder.sequences)) + "; all frames:", str(recorder.all_frames) + "; seq with res:", recorder.sequences_with_results)
+    
     while recorder.all_frames < args.frames:
         start(args.volatility, args.laziness)
         if len(recorder.sequences) % 20 == 0:
