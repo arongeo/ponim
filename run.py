@@ -8,7 +8,7 @@ import vision
 device = torch.device("cpu")
 
 vqvae = vision.VQVAE(16).to(device)
-cog = cognition.Cognition(128, 128, vqvae.codebook_size, vqvae.quantizer, device)
+cog = cognition.Cognition(512, vqvae, device)
 
 if os.path.exists("vae.ptm"):
     vqvae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
@@ -63,7 +63,7 @@ while running:
     elif keys[pygame.K_DOWN]:
         rmovement = 1.0
 
-    rmt = torch.Tensor([[[0.0, rmovement * 1000]]]).to(device)
+    rmt = torch.Tensor([[[0.0, rmovement * 100]]]).to(device)
     print(rmt)
     lat = cog.forward(rmt, prev_lat_frame.view(1, 1, -1))
     prev_lat_frame = lat.clone().detach()
