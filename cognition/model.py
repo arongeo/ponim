@@ -41,11 +41,11 @@ class Cognition(nn.Module):
 
         with torch.no_grad():
             embeddings = self.quantizer(prev_frame_tokens)
-            input_embeddings = self.input_embeddings(inputs.long())
+            input_embs = self.input_embeddings(inputs.int())
 
-        emb_hid = self.linear_emb_hid(embeddings.flatten(2))
+        emb_hid = self.linear_emb_hid(embeddings)
 
-        o, self.h = self.gru(torch.cat([input_embeddings, emb_hid], dim=-1), self.h)
+        o, self.h = self.gru(torch.cat([input_embs, emb_hid], dim=-1), self.h)
         o = self.linear_hid_token(o)
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
