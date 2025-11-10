@@ -39,7 +39,7 @@ class Cognition(nn.Module):
 
         with torch.no_grad():
             embeddings = self.quantizer(prev_frame_tokens)
-            input_embeddings = self.input_embeddings(inputs)
+            input_embeddings = self.input_embeddings(inputs.long())
 
         o, self.h = self.gru(torch.cat([input_embeddings, emb_hid], dim=-1), self.h)
         o = self.linear_hid_token(o)
