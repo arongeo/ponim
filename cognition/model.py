@@ -21,8 +21,11 @@ class Cognition(nn.Module):
 
         self.quantizer = vqvae.quantizer
 
+
+        self.linear_emb_hid = self.Linear(self.codebook_size * self.latent_dim_size, hidden_size)
+
         self.gru = nn.GRU(
-            USER_INPUTS_SIZE,
+            USER_INPUTS_SIZE + hidden_size,
             hidden_size,
             batch_first=True,
             num_layers=num_layers,
@@ -37,8 +40,10 @@ class Cognition(nn.Module):
 
         with torch.no_grad():
             embeddings = self.quantizer(prev_frame_tokens)
-        
-        o, self.h = self.gru(inputs, self.h)
+       
+        emb_hid = self.linear_emb_hid(embeddings)
+
+        o, self.h = self.gru(torch.cat([inputs, emb_hid], dim=-1), self.h)
         o = self.linear_hid_token(o)
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
