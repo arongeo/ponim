@@ -41,7 +41,7 @@ class Cognition(nn.Module):
 
         with torch.no_grad():
             embeddings = self.quantizer(prev_frame_tokens)
-            input_embs = self.input_embeddings(inputs.int())
+            input_embs = self.input_embeddings(inputs.int() + 1).view(bs, ss, -1)
 
         emb_hid = self.linear_emb_hid(embeddings)
 
