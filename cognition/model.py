@@ -13,7 +13,7 @@ class Cognition(nn.Module):
     def __init__(self, hidden_size: int, vqvae: VQVAE, device, num_layers=1):
         super().__init__()
 
-        self.hid_size = hidden_size
+        self.hidden_size = hidden_size
         self.device = device
         self.num_layers = num_layers
         self.latent_dim_size = vqvae.latent_dim_size
@@ -25,7 +25,7 @@ class Cognition(nn.Module):
         self.linear_emb_hid = nn.Linear(self.quantizer.embedding_dim * self.latent_dim_size, hidden_size)
 
         self.gru = nn.GRU(
-            (2 * int(self.hidden_size / 2)) + hidden_size,
+            3 * hidden_size,
             hidden_size,
             batch_first=True,
             num_layers=num_layers,
@@ -43,7 +43,7 @@ class Cognition(nn.Module):
        
         emb_hid = self.linear_emb_hid(embeddings.flatten(2))
 
-        o, self.h = self.gru(torch.cat([inputs.repeat_interleave(int(self.hidden_size / 2), -1), emb_hid], dim=-1), self.h)
+        o, self.h = self.gru(torch.cat([inputs.repeat_interleave(self.hidden_size, -1), emb_hid], dim=-1), self.h)
         o = self.linear_hid_token(o)
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
@@ -53,7 +53,7 @@ class Cognition(nn.Module):
             return torch.argmax(o, dim=-1)
 
     def reset(self, batch_size: int):
-        self.h = torch.randn(self.num_layers, batch_size, self.hid_size).to(self.device)
+        self.h = torch.randn(self.num_layers, batch_size, self.hidden_size).to(self.device)
 
     @staticmethod
     def loss(generated_tokens, original_tokens):
