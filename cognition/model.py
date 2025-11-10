@@ -22,7 +22,7 @@ class Cognition(nn.Module):
         self.quantizer = vqvae.quantizer
 
 
-        self.linear_emb_hid = self.Linear(self.codebook_size * self.latent_dim_size, hidden_size)
+        self.linear_emb_hid = nn.Linear(self.codebook_size * self.latent_dim_size, hidden_size)
 
         self.gru = nn.GRU(
             USER_INPUTS_SIZE + hidden_size,
