@@ -19,14 +19,14 @@ class Cognition(nn.Module):
         self.latent_dim_size = vqvae.latent_dim_size
         self.codebook_size = vqvae.codebook_size
 
-        self.quantizer = nn.Embedding.from_pretrained(vqvae.quantizer.weight)
+        self.quantizer = vqvae.quantizer
 
         self.input_embeddings = nn.Embedding(3, self.hidden_size)
 
         self.linear_emb_hid = nn.Linear(self.quantizer.embedding_dim * self.latent_dim_size, self.hidden_size)
 
         self.gru = nn.GRU(
-            3 * hidden_size,
+            2 * hidden_size,
             hidden_size,
             batch_first=True,
             num_layers=num_layers,
@@ -39,11 +39,9 @@ class Cognition(nn.Module):
     def forward(self, inputs: torch.Tensor, prev_frame_tokens: torch.Tensor, training=False):
         bs, ss, _ = prev_frame_tokens.shape
 
-        embeddings = self.quantizer(prev_frame_tokens)
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, ss, -1)
-        emb_hid = self.linear_emb_hid(embeddings.flatten(2))
 
-        o, self.h = self.gru(torch.cat([input_embs, emb_hid], dim=-1), self.h)
+        o, self.h = self.gru(input_embs, self.h)
         o = self.linear_hid_token(o)
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
