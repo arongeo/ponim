@@ -91,6 +91,6 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = Cognition(128, vqvae, device)
+cog = Cognition(256, vqvae, device)
 
 cognition.train_test(cog, vqvae, training_batches, testing_batches, 100)
