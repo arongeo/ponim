@@ -21,17 +21,19 @@ class Cognition(nn.Module):
 
         self.quantizer = vqvae.quantizer
 
-        self.input_embeddings = nn.Embedding(3, self.hidden_size)
+        self.input_embeddings = nn.Embedding(3, 4)
 
         self.linear_emb_hid = nn.Linear(self.quantizer.embedding_dim * self.latent_dim_size, self.hidden_size)
 
         self.gru = nn.GRU(
-            2 * hidden_size,
+            2 * 4,
             hidden_size,
             batch_first=True,
             num_layers=num_layers,
             dropout=(0.3 if 1 < num_layers else 0.0)
         )
+
+        self.dropout = nn.Dropout(0.2)
 
         self.linear_hid_token = nn.Linear(hidden_size, self.codebook_size * self.latent_dim_size)
         
@@ -41,8 +43,8 @@ class Cognition(nn.Module):
 
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, ss, -1)
 
-        o, self.h = self.gru(input_embs, self.h)
-        o = self.linear_hid_token(o)
+        o, self.h = self.gru(self.dropout(input_embs), self.h)
+        o = self.linear_hid_token(self.dropout(o))
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
         if training:
