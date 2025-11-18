@@ -19,7 +19,7 @@ class LSE(nn.Module):
         self.linear_hid_emb = nn.Linear(hidden_size, self.vqvae.latent_dim_size * self.vqvae.codebook_size)
 
     def forward(self, emb):
-        o = self.linear_emb_hid(emb)
+        o = self.linear_emb_hid(emb.flatten(2))
         o = self.linear_hid_emb(o)
         return o.view(self.hs, self.vqvae.latent_dim_size, self.vqvae.codebook_size)
 
