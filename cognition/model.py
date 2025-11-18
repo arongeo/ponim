@@ -38,24 +38,21 @@ class Cognition(nn.Module):
         self.linear_hid_token = nn.Linear(hidden_size, self.codebook_size * self.latent_dim_size)
         
         
-    def forward(self, inputs: torch.Tensor, prev_frame_tokens: torch.Tensor, training=False, temperature=0.8):
-        bs, ss, _ = prev_frame_tokens.shape
+    def forward(self, inputs: torch.Tensor, next_frame_tokens: torch.Tensor, h: torch.Tensor, training=False, temperature=0.8):
+        bs, ss, _ = inputs.shape
 
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, ss, -1)
 
-        o, self.h = self.gru(self.dropout(input_embs), self.h)
+        o, h = self.gru(self.dropout(input_embs), h)
         o = self.linear_hid_token(self.dropout(o))
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
         if training:
-            return o
+            return o, h
         else:
             #prob = torch.softmax(o / temperature, dim=-1)
             #return torch.multinomial(prob.view(-1, prob.shape[-1]), 1).view(o.shape[:-1])
-            return torch.argmax(o, dim=-1)
-
-    def reset(self, batch_size: int):
-        self.h = torch.randn(self.num_layers, batch_size, self.hidden_size).to(self.device)
+            return torch.argmax(o, dim=-1), h
 
     @staticmethod
     def loss(generated_tokens, original_tokens):

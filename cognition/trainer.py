@@ -16,15 +16,14 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
             cognition.train()
             for batch in training_batches:
                 bs, ss, h, w = batch["frames"].shape
-
-                cognition.reset(bs)
+                hid = torch.randn(cognition.num_layers, bs, cognition.hidden_size)
 
                 tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
 
                 tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
                 actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
-                pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1], training=True)
+                pred_tokens = cognition.forward(actions[:, :-1], tokens, hid, training=True)
 
                 loss = Cognition.loss(pred_tokens, tokens)
                 
@@ -40,14 +39,14 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
             for batch in testing_batches:
                 bs, ss, h, w = batch["frames"].shape
 
-                cognition.reset(bs)
+                hid = torch.randn(cognition.num_layers, bs, cognition.hidden_size)
 
                 tokens = vqvae.encode(batch["frames"].view(bs * ss, 1, h, w)).long().view(bs, ss, -1)
 
                 tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
                 actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
-                pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1], training=True)
+                pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1], hid, training=True)
 
                 loss = Cognition.loss(pred_tokens, tokens)
                 testing_loss += loss
