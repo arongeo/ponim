@@ -1,5 +1,5 @@
 
-from cognition.lse.lse import LSE
+from cognition.lse.model import LSE
 from cognition.model import Cognition
 from vision.vqvae import VQVAE
 import torch
