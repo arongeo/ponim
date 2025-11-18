@@ -52,8 +52,8 @@ else:
     vision.train_test(vqvae, train_loader, test_loader, 10, beta=0.5)
     torch.save(vqvae.state_dict(), "vae.ptm")
 
-lse = cognition.lse.LSE(HIDDEN_SIZE, vqvae)
-cognition.lse.train_test(lse, train_loader, test_loader, 100)
+lse = cognition.lse.model.LSE(HIDDEN_SIZE, vqvae)
+cognition.lse.trainer.train_test(lse, train_loader, test_loader, 100)
 
 #random.shuffle(allframes)
 #num_frames = 10

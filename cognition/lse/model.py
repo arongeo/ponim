@@ -8,6 +8,7 @@ from vision.vqvae import VQVAE
 
 class LSE(nn.Module):
     def __init__(self, hidden_size, vqvae: VQVAE):
+        super().__init__()
         self.hs = hidden_size
 
         self.vqvae = vqvae
