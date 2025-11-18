@@ -55,8 +55,8 @@ class Cognition(nn.Module):
             return torch.argmax(o, dim=-1), h
 
     @staticmethod
-    def loss(generated_tokens, original_tokens, gru_o, emb_hid_o, beta=0.3):
+    def loss(generated_tokens, original_tokens):
         return F.cross_entropy(
             generated_tokens.view(-1, generated_tokens.shape[-1]),
             original_tokens.view(-1)
-        ) + F.mse_loss(gru_o, emb_hid_o) * beta
+        )
