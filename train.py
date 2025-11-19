@@ -53,7 +53,7 @@ else:
     torch.save(vqvae.state_dict(), "vae.ptm")
 
 lse = cognition.lse.model.LSE(HIDDEN_SIZE, vqvae)
-cognition.lse.trainer.train_test(lse, train_loader, test_loader, 100)
+cognition.lse.trainer.train_test(lse, train_loader, test_loader, 20)
 
 #random.shuffle(allframes)
 #num_frames = 10

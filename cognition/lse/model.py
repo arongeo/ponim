@@ -20,9 +20,10 @@ class LSE(nn.Module):
 
     def forward(self, emb):
         bs = emb.shape[0]
-        o = self.linear_emb_hid(emb.flatten(1))
+        ss = emb.shape[1]
+        o = self.linear_emb_hid(emb.flatten(2))
         o = self.linear_hid_emb(o)
-        return o.view(bs, self.vqvae.latent_dim_size, self.vqvae.codebook_size)
+        return o.view(bs, ss, self.vqvae.latent_dim_size, self.vqvae.codebook_size)
 
     @staticmethod
     def loss(generated_logits, original_tokens):

@@ -23,9 +23,9 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
                 tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
                 actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
-                pred_tokens = cognition.forward(actions[:, :-1], tokens, hid, training=True)
+                pred_tokens, hid, hs, phs = cognition.forward(actions[:, :-1], tokens, hid, training=True)
 
-                loss = Cognition.loss(pred_tokens, tokens)
+                loss = Cognition.loss(pred_tokens, tokens, hs, phs)
                 
                 optim.zero_grad()
                 loss.backward()
@@ -46,9 +46,9 @@ def train_test(cognition: Cognition, vqvae: VQVAE, training_batches, testing_bat
                 tcog = torch.cat([vqvae.encode(torch.zeros(bs, 1, h, w)).long().view(bs, 1, -1), tokens], dim=1)
                 actions = torch.cat([torch.zeros(bs, 1, 2), batch["actions"]], dim=1)
 
-                pred_tokens = cognition.forward(actions[:, :-1], tcog[:, :-1], hid, training=True)
+                pred_tokens, hid, hs, phs = cognition.forward(actions[:, :-1], tokens, hid, training=True)
 
-                loss = Cognition.loss(pred_tokens, tokens)
+                loss = Cognition.loss(pred_tokens, tokens, hs, phs)
                 #loss = Cognition.loss(pred_tokens, tokens)
                 testing_loss += loss
 

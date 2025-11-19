@@ -41,27 +41,26 @@ class Cognition(nn.Module):
     def forward(self, inputs: torch.Tensor, next_frame_tokens: torch.Tensor, h: torch.Tensor, training=False, temperature=0.8):
         bs, ss, _ = inputs.shape
 
-        with torch.no_grad():
-            hid = self.lse.linear_emb_hid(self.quantizer(next_frame_tokens))
-
-        print(hid.shape)
+        if training:
+            with torch.no_grad():
+                hid = self.lse.linear_emb_hid(self.quantizer(next_frame_tokens).flatten(2))
 
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, ss, -1)
 
-        o, h = self.gru(self.dropout(input_embs), h)
-        o = self.linear_hid_token(self.dropout(o))
+        gru_o, h = self.gru(self.dropout(input_embs), h)
+        o = self.linear_hid_token(self.dropout(gru_o))
         o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
 
         if training:
-            return o, h
+            return o, h, gru_o, hid
         else:
             #prob = torch.softmax(o / temperature, dim=-1)
             #return torch.multinomial(prob.view(-1, prob.shape[-1]), 1).view(o.shape[:-1])
             return torch.argmax(o, dim=-1), h
 
     @staticmethod
-    def loss(generated_tokens, original_tokens):
+    def loss(generated_tokens, original_tokens, hs, phs, beta=0.3):
         return F.cross_entropy(
             generated_tokens.view(-1, generated_tokens.shape[-1]),
             original_tokens.view(-1)
-        )
+        ) + beta * F.mse_loss(hs, phs)

@@ -18,11 +18,11 @@ def train_test(lse: LSE, train_loader, test_loader, epochs: int):
 
             with torch.no_grad():
                 tokens = lse.vqvae.encode(batch)
-                embs = lse.vqvae.quantizer(tokens)
+                embs = lse.vqvae.quantizer(tokens.unsqueeze(1))
 
             reconst = lse.forward(embs)
 
-            loss = LSE.loss(reconst, tokens)
+            loss = LSE.loss(reconst.squeeze(1), tokens)
             
             loss.backward()
             optim.step()
@@ -34,11 +34,11 @@ def train_test(lse: LSE, train_loader, test_loader, epochs: int):
         for batch in test_loader:
             with torch.no_grad():
                 tokens = lse.vqvae.encode(batch)
-                embs = lse.vqvae.quantizer(tokens)
+                embs = lse.vqvae.quantizer(tokens.unsqueeze(1))
 
             reconst = lse.forward(embs)
 
-            loss = LSE.loss(reconst, tokens)
+            loss = LSE.loss(reconst.squeeze(1), tokens)
 
             testing_loss += loss.item()
         print(f"Epoch {epoch + 1} - training loss: {training_loss/len(train_loader.dataset)} - testing loss: {testing_loss/len(test_loader.dataset)}")
