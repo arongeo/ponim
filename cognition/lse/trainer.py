@@ -23,7 +23,7 @@ def train_test(lse: LSE, train_loader, test_loader, epochs: int):
 
             reconst = lse.forward(embs)
 
-            loss = LSE.loss(reconst, batch)
+            loss = LSE.loss(reconst, tokens)
             
             loss.backward()
             optim.step()
@@ -39,7 +39,7 @@ def train_test(lse: LSE, train_loader, test_loader, epochs: int):
 
             reconst = lse.forward(embs)
 
-            loss = LSE.loss(reconst, batch)
+            loss = LSE.loss(reconst, tokens)
 
             testing_loss += loss.item()
         print(f"Epoch {epoch + 1} - training loss: {training_loss/len(train_loader.dataset)} - testing loss: {testing_loss/len(test_loader.dataset)}")
