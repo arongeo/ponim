@@ -1,6 +1,5 @@
 
 from cognition.lse.model import LSE
-from cognition.model import Cognition
 from vision.vqvae import VQVAE
 import torch
 from torch.nn import functional as F
