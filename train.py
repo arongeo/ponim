@@ -60,7 +60,6 @@ cognition.lse.trainer.train_test(lse, train_loader, test_loader, 100)
 #rand_i = random.randint(0, len(allframes) - 1 - num_frames)
 #vision.sample(vqvae, torch.Tensor(allframes[rand_i:rand_i+num_frames]).clone().detach())
 
-'''
 del allframes
 
 grouped_seqs = {}
@@ -98,7 +97,6 @@ training_testing_split = int(0.8 * len(batches))
 training_batches = batches[:training_testing_split]
 testing_batches = batches[training_testing_split:]
 
-cog = Cognition(HIDDEN_SIZE, vqvae, device)
+cog = Cognition(lse, device)
 
 cognition.train_test(cog, vqvae, training_batches, testing_batches, 100)
-'''
