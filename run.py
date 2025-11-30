@@ -8,7 +8,8 @@ import vision
 device = torch.device("cpu")
 
 vqvae = vision.VQVAE(16).to(device)
-cog = cognition.Cognition(128, vqvae, device)
+lse = cognition.lse.model.LSE(int(256 * 0.75), vqvae)
+cog = cognition.Cognition(lse, device)
 
 if os.path.exists("vae.ptm"):
     vqvae.load_state_dict(torch.load("vae.ptm", weights_only=True, map_location=device))
@@ -46,7 +47,8 @@ print(mu.shape)
 prev_lat_frames = mu.unsqueeze(0)
 '''
 prev_lat_frame = vqvae.encode(torch.zeros(1, 1, 32, 64)).long().view(1, 1, -1)
-cog.reset(1)
+
+hid = torch.zeros(1, cog.hidden_size)
 
 while running:
     rmovement = 0
@@ -68,10 +70,9 @@ while running:
     elif keys[pygame.K_r]:
         lmovement = 1.0
 
-    rmt = torch.Tensor([[[lmovement, rmovement]]]).to(device)
+    rmt = torch.Tensor([[lmovement, rmovement]]).to(device)
     print(rmt)
-    lat = cog.forward(rmt, prev_lat_frame.view(1, 1, -1))
-    prev_lat_frame = lat.clone().detach()
+    lat, hid = cog.forward(rmt, hid)
     framebuf = torch.round(vqvae.decode(lat).squeeze().squeeze())
 
     for i in range(32):
