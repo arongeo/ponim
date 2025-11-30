@@ -14,7 +14,7 @@ class Cognition(nn.Module):
     def __init__(self, lse: LSE, device, num_layers=1):
         super().__init__()
 
-        self.hidden_size = lse.hidden_size
+        self.hidden_size = int(lse.hidden_size * (4.0/3.0))
         self.device = device
         self.num_layers = num_layers
         self.latent_dim_size = lse.vqvae.latent_dim_size
@@ -25,12 +25,9 @@ class Cognition(nn.Module):
 
         self.input_embeddings = nn.Embedding(3, 4)
 
-        self.gru = nn.GRU(
+        self.gru = nn.GRUCell(
             2 * 4,
-            self.hidden_size,
-            batch_first=True,
-            num_layers=num_layers,
-            dropout=(0.3 if 1 < num_layers else 0.0)
+            self.hidden_size
         )
 
         self.dropout = nn.Dropout(0.2)
@@ -38,29 +35,40 @@ class Cognition(nn.Module):
         self.linear_hid_token = nn.Linear(self.hidden_size, self.codebook_size * self.latent_dim_size)
         
         
-    def forward(self, inputs: torch.Tensor, next_frame_tokens: torch.Tensor, h: torch.Tensor, training=False, temperature=0.8):
+    def forward(self, inputs: torch.Tensor, h_in: torch.Tensor, training=False, temperature=0.8) -> tuple[torch.Tensor, torch.Tensor]:
         bs, ss, _ = inputs.shape
 
+        '''
         if training:
             with torch.no_grad():
                 hid = self.lse.linear_emb_hid(self.quantizer(next_frame_tokens).flatten(2))
+        '''
 
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, ss, -1)
 
-        gru_o, h = self.gru(self.dropout(input_embs), h)
-        o = self.linear_hid_token(self.dropout(gru_o))
-        o = o.view(bs, ss, self.latent_dim_size, self.codebook_size)
+        h_out = self.gru(self.dropout(input_embs), h_in)
+        o = self.linear_hid_token(self.dropout(h_out))
+        o = o.view(bs, self.latent_dim_size, self.codebook_size)
 
         if training:
-            return o, h, gru_o, hid
+            return o, h_out
         else:
             #prob = torch.softmax(o / temperature, dim=-1)
             #return torch.multinomial(prob.view(-1, prob.shape[-1]), 1).view(o.shape[:-1])
-            return torch.argmax(o, dim=-1), h
+            return torch.argmax(o, dim=-1), h_out
 
+    '''
     @staticmethod
     def loss(generated_tokens, original_tokens, hs, phs, beta=0.3):
         return F.cross_entropy(
             generated_tokens.view(-1, generated_tokens.shape[-1]),
             original_tokens.view(-1)
         ) + beta * F.mse_loss(hs, phs)
+    '''
+
+    @staticmethod
+    def loss(generated_tokens, original_tokens):
+        return F.cross_entropy(
+            generated_tokens.view(-1, generated_tokens.shape[-1]),
+            original_tokens.view(-1)
+        )
