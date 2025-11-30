@@ -41,13 +41,13 @@ class Cognition(nn.Module):
             with torch.no_grad():
                 hid = self.lse.linear_emb_hid(self.quantizer(prev_tokens).flatten(1))
             
-            h = self.dropout(torch.cat([hid, h_in[:, hid.shape[1]:]], dim=-1))
+            h = torch.cat([hid, h_in[:, hid.shape[1]:]], dim=-1)
         else:
-            h = self.dropout(h_in)
+            h = h_in
 
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, -1)
 
-        h_out = self.gru(self.dropout(input_embs), h)
+        h_out = self.gru(self.dropout(input_embs), self.dropout(h))
         o = self.linear_hid_token(self.dropout(h_out))
         o = o.view(bs, self.latent_dim_size, self.codebook_size)
 
@@ -67,9 +67,8 @@ class Cognition(nn.Module):
         ) + beta * F.mse_loss(hs, phs)
     '''
 
-    @staticmethod
-    def loss(generated_tokens, original_tokens):
+    def loss(self, generated_tokens, original_tokens, generated_hid):
         return F.cross_entropy(
             generated_tokens.view(-1, generated_tokens.shape[-1]),
             original_tokens.view(-1)
-        )
+        ) + F.mse_loss(generated_hid[:, :self.lse.hidden_size], self.lse.linear_emb_hid(self.quantizer(original_tokens).flatten(1)))

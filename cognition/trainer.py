@@ -30,9 +30,9 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 for s in range(ss - 1):
                     pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
-                    hid = hid.detach()
 
-                    loss = Cognition.loss(pred_tokens, tokens[s + 1])
+                    loss = cog.loss(pred_tokens, tokens[s + 1], hid)
+                    hid = hid.detach()
 
                     batch_loss += loss
                 
@@ -60,9 +60,10 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 for s in range(ss - 1):
                     pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
+                    
+                    loss = cog.loss(pred_tokens, tokens[s + 1], hid)
                     hid = hid.detach()
 
-                    loss = Cognition.loss(pred_tokens, tokens[s + 1])
                     batch_loss += loss
                 
                 testing_loss += (batch_loss.item() / ss)
