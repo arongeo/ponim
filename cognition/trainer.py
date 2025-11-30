@@ -32,6 +32,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                     tokens = vqvae.encode(frames[s].view(bs, 1, h, w)).long().view(bs, -1)
 
                     pred_tokens, hid = cog.forward(actions[s], hid, training=True)
+                    hid = hid.detach()
 
                     loss = Cognition.loss(pred_tokens, tokens)
                 
@@ -63,6 +64,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                     tokens = vqvae.encode(frames[s].view(bs, 1, h, w)).long().view(bs, -1)
 
                     pred_tokens, hid = cog.forward(actions[s], hid, training=True)
+                    hid = hid.detach()
 
                     loss = Cognition.loss(pred_tokens, tokens)
                     batch_loss += loss
