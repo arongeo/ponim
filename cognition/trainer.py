@@ -17,7 +17,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
             for batch in training_batches:
                 batch_loss = 0
                 frames = batch["frames"].permute(1, 0, 2, 3)
-                actions = batch["actions"].permute(1, 0, 2, 3)
+                actions = batch["actions"].permute(1, 0, 2)
 
                 _, bs, h, w = frames.shape
 
@@ -31,9 +31,9 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 for s in range(ss):
                     tokens = vqvae.encode(frames[s].view(bs, 1, h, w)).long().view(bs, -1)
 
-                    pred_tokens, hid = cog.forward(actions[s], hid)
+                    pred_tokens, hid = cog.forward(actions[s], hid, training=True)
 
-                    loss = Cognition.loss(pred_tokens, tokens[s])
+                    loss = Cognition.loss(pred_tokens, tokens)
                 
                     optim.zero_grad()
                     loss.backward()
@@ -48,7 +48,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
             for batch in testing_batches:
                 batch_loss = 0
                 frames = batch["frames"].permute(1, 0, 2, 3)
-                actions = batch["actions"].permute(1, 0, 2, 3)
+                actions = batch["actions"].permute(1, 0, 2)
 
                 _, bs, h, w = frames.shape
 
@@ -62,9 +62,9 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 for s in range(ss):
                     tokens = vqvae.encode(frames[s].view(bs, 1, h, w)).long().view(bs, -1)
 
-                    pred_tokens, hid = cog.forward(actions[s], hid)
+                    pred_tokens, hid = cog.forward(actions[s], hid, training=True)
 
-                    loss = Cognition.loss(pred_tokens, tokens[s])
+                    loss = Cognition.loss(pred_tokens, tokens)
                     batch_loss += loss
                 
                 testing_loss += (batch_loss / ss)

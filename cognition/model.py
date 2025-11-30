@@ -36,7 +36,7 @@ class Cognition(nn.Module):
         
         
     def forward(self, inputs: torch.Tensor, h_in: torch.Tensor, training=False, temperature=0.8) -> tuple[torch.Tensor, torch.Tensor]:
-        bs, ss, _ = inputs.shape
+        bs, _ = inputs.shape
 
         '''
         if training:
@@ -44,7 +44,7 @@ class Cognition(nn.Module):
                 hid = self.lse.linear_emb_hid(self.quantizer(next_frame_tokens).flatten(2))
         '''
 
-        input_embs = self.input_embeddings(inputs.int() + 1).view(bs, ss, -1)
+        input_embs = self.input_embeddings(inputs.int() + 1).view(bs, -1)
 
         h_out = self.gru(self.dropout(input_embs), h_in)
         o = self.linear_hid_token(self.dropout(h_out))
