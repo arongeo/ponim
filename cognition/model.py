@@ -11,12 +11,11 @@ USER_INPUTS_SIZE = 2        # left paddle input, right paddle input
 POSSIBLE_RESULTS_SIZE = 3   # 3 possible outcomes, game continues, left wins, right wins
 
 class Cognition(nn.Module):
-    def __init__(self, lse: LSE, device, num_layers=1):
+    def __init__(self, lse: LSE, device):
         super().__init__()
 
         self.hidden_size = int(lse.hidden_size * (4.0/3.0))
         self.device = device
-        self.num_layers = num_layers
         self.latent_dim_size = lse.vqvae.latent_dim_size
         self.codebook_size = lse.vqvae.codebook_size
         self.lse = lse
@@ -35,18 +34,20 @@ class Cognition(nn.Module):
         self.linear_hid_token = nn.Linear(self.hidden_size, self.codebook_size * self.latent_dim_size)
         
         
-    def forward(self, inputs: torch.Tensor, h_in: torch.Tensor, training=False, temperature=0.8) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, inputs: torch.Tensor, prev_tokens: torch.Tensor, h_in: torch.Tensor, training=False, temperature=0.8) -> tuple[torch.Tensor, torch.Tensor]:
         bs, _ = inputs.shape
 
-        '''
         if training:
             with torch.no_grad():
-                hid = self.lse.linear_emb_hid(self.quantizer(next_frame_tokens).flatten(2))
-        '''
+                hid = self.lse.linear_emb_hid(self.quantizer(prev_tokens).flatten(1))
+            
+            h = self.dropout(torch.cat([hid, h_in[:, hid.shape[1]:]], dim=-1))
+        else:
+            h = self.dropout(h_in)
 
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, -1)
 
-        h_out = self.gru(self.dropout(input_embs), h_in)
+        h_out = self.gru(self.dropout(input_embs), h)
         o = self.linear_hid_token(self.dropout(h_out))
         o = o.view(bs, self.latent_dim_size, self.codebook_size)
 

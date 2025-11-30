@@ -19,7 +19,8 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 batch_loss = 0
 
                 fbs, fss, fw, fh = batch["frames"].shape
-                tokens = vqvae.encode(batch["frames"].view(fbs * fss, 1, fh, fw)).long().view(fbs, fss, -1).permute(1, 0, 2).contiguous()
+                frames = torch.cat([torch.zeros(fbs, 1, fw, fh), batch["frames"]], dim=1)
+                tokens = vqvae.encode(frames.view(fbs * (fss + 1), 1, fh, fw)).long().view(fbs, (fss + 1), -1).permute(1, 0, 2).contiguous()
                 actions = batch["actions"].permute(1, 0, 2).contiguous()
 
                 ss, bs, tks = tokens.shape
@@ -27,11 +28,11 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 hid = torch.zeros(bs, cog.hidden_size)
 
-                for s in range(ss):
-                    pred_tokens, hid = cog.forward(actions[s], hid, training=True)
+                for s in range(ss - 1):
+                    pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
                     hid = hid.detach()
 
-                    loss = Cognition.loss(pred_tokens, tokens[s])
+                    loss = Cognition.loss(pred_tokens, tokens[s + 1])
 
                     batch_loss += loss
                 
@@ -48,7 +49,8 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 batch_loss = 0
 
                 fbs, fss, fw, fh = batch["frames"].shape
-                tokens = vqvae.encode(batch["frames"].view(fbs * fss, 1, fh, fw)).long().view(fbs, fss, -1).permute(1, 0, 2).contiguous()
+                frames = torch.cat([torch.zeros(fbs, 1, fw, fh), batch["frames"]], dim=1)
+                tokens = vqvae.encode(frames.view(fbs * (fss + 1), 1, fh, fw)).long().view(fbs, (fss + 1), -1).permute(1, 0, 2).contiguous()
                 actions = batch["actions"].permute(1, 0, 2)
 
                 ss, bs, tks = tokens.shape
@@ -56,11 +58,11 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 hid = torch.zeros(bs, cog.hidden_size)
 
-                for s in range(ss):
-                    pred_tokens, hid = cog.forward(actions[s], hid, training=True)
+                for s in range(ss - 1):
+                    pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
                     hid = hid.detach()
 
-                    loss = Cognition.loss(pred_tokens, tokens[s])
+                    loss = Cognition.loss(pred_tokens, tokens[s + 1])
                     batch_loss += loss
                 
                 testing_loss += (batch_loss.item() / ss)

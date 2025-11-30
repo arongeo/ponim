@@ -72,7 +72,7 @@ while running:
 
     rmt = torch.Tensor([[lmovement, rmovement]]).to(device)
     print(rmt)
-    lat, hid = cog.forward(rmt, hid)
+    lat, hid = cog.forward(rmt, prev_lat_frame, hid)
     framebuf = torch.round(vqvae.decode(lat).squeeze().squeeze())
 
     for i in range(32):
