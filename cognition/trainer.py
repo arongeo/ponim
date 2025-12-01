@@ -20,7 +20,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 fbs, fss, fw, fh = batch["frames"].shape
                 frames = torch.cat([torch.zeros(fbs, 1, fw, fh), batch["frames"]], dim=1)
-                tokens = vqvae.encode(frames.view(fbs * (fss + 1), 1, fh, fw)).long().view(fbs, (fss + 1), -1).permute(1, 0, 2).contiguous()
+                tokens = vqvae.encode(frames.view(fbs * (fss + 1), 1, fh, fw)).long().view(fbs, (fss + 1), -1).permute(1, 0, 2).contiguous().detach()
                 actions = batch["actions"].permute(1, 0, 2).contiguous()
 
                 ss, bs, tks = tokens.shape
@@ -30,7 +30,8 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 for s in range(ss - 1):
                     pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
-
+                    #hid = hid.detach()
+                    
                     loss = cog.loss(pred_tokens, tokens[s + 1], hid)
 
                     batch_loss += loss
@@ -49,7 +50,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 fbs, fss, fw, fh = batch["frames"].shape
                 frames = torch.cat([torch.zeros(fbs, 1, fw, fh), batch["frames"]], dim=1)
-                tokens = vqvae.encode(frames.view(fbs * (fss + 1), 1, fh, fw)).long().view(fbs, (fss + 1), -1).permute(1, 0, 2).contiguous()
+                tokens = vqvae.encode(frames.view(fbs * (fss + 1), 1, fh, fw)).long().view(fbs, (fss + 1), -1).permute(1, 0, 2).contiguous().detach()
                 actions = batch["actions"].permute(1, 0, 2)
 
                 ss, bs, tks = tokens.shape
@@ -59,7 +60,8 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
 
                 for s in range(ss - 1):
                     pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
-                    
+                    #hid = hid.detach()
+
                     loss = cog.loss(pred_tokens, tokens[s + 1], hid)
 
                     batch_loss += loss

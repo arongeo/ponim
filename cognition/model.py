@@ -20,6 +20,9 @@ class Cognition(nn.Module):
         self.codebook_size = lse.vqvae.codebook_size
         self.lse = lse
 
+        for param in self.lse.parameters():
+            param.requires_grad = False
+
         self.quantizer = lse.vqvae.quantizer
 
         self.input_embeddings = nn.Embedding(3, 4)
@@ -38,9 +41,7 @@ class Cognition(nn.Module):
         bs, _ = inputs.shape
 
         if training:
-            with torch.no_grad():
-                hid = self.lse.linear_emb_hid(self.quantizer(prev_tokens).flatten(1))
-            
+            hid = self.lse.linear_emb_hid(self.quantizer(prev_tokens).flatten(1))
             h = torch.cat([hid, h_in[:, hid.shape[1]:]], dim=-1)
         else:
             h = h_in
@@ -48,7 +49,8 @@ class Cognition(nn.Module):
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, -1)
 
         h_out = self.gru(self.dropout(input_embs), self.dropout(h))
-        o = self.linear_hid_token(self.dropout(h_out))
+
+        o = self.lse.linear_hid_emb(self.dropout(h_out[:, :self.lse.hidden_size]))
         o = o.view(bs, self.latent_dim_size, self.codebook_size)
 
         if training:
@@ -71,4 +73,4 @@ class Cognition(nn.Module):
         return F.cross_entropy(
             generated_tokens.view(-1, generated_tokens.shape[-1]),
             original_tokens.view(-1)
-        ) + F.mse_loss(generated_hid[:, :self.lse.hidden_size], self.lse.linear_emb_hid(self.quantizer(original_tokens).flatten(1)))
+        )
