@@ -87,4 +87,4 @@ while running:
     # flip() the display to put your work on screen
     pygame.display.flip()
 
-    clock.tick(30)
+    clock.tick(20)

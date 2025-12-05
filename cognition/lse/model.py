@@ -15,7 +15,12 @@ class LSE(nn.Module):
         for p in self.vqvae.parameters():
             p.requires_grad = False
 
-        self.linear_emb_hid = nn.Linear(self.vqvae.latent_dim_size * self.vqvae.quantizer.embedding_dim, hidden_size)
+        self.linear_emb_hid = nn.Sequential(
+                nn.Linear(self.vqvae.latent_dim_size * self.vqvae.quantizer.embedding_dim, hidden_size),
+                nn.LayerNorm(hidden_size),
+                nn.Tanh()
+        )
+
         self.linear_hid_emb = nn.Linear(hidden_size, self.vqvae.latent_dim_size * self.vqvae.codebook_size)
 
     def forward(self, emb):

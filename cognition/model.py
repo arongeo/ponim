@@ -23,7 +23,7 @@ class Cognition(nn.Module):
         for param in self.lse.parameters():
             param.requires_grad = False
 
-        self.quantizer = lse.vqvae.quantizer
+        self.quantizer = self.lse.vqvae.quantizer
 
         self.input_embeddings = nn.Embedding(3, 4)
 
@@ -34,21 +34,24 @@ class Cognition(nn.Module):
 
         self.dropout = nn.Dropout(0.2)
 
-        self.linear_hid_token = nn.Linear(self.hidden_size, self.codebook_size * self.latent_dim_size)
+        self.linear_hid_lse = nn.Linear(self.hidden_size, self.lse.hidden_size)
         
         
     def forward(self, inputs: torch.Tensor, prev_tokens: torch.Tensor, h_in: torch.Tensor, training=False, temperature=0.8) -> tuple[torch.Tensor, torch.Tensor]:
         bs, _ = inputs.shape
 
         if training:
-            hid = self.lse.linear_emb_hid(self.quantizer(prev_tokens).flatten(1))
+            with torch.no_grad():
+                embs = self.quantizer(prev_tokens)
+            
+            hid = self.lse.linear_emb_hid(embs.flatten(1))
             h = torch.cat([hid, h_in[:, hid.shape[1]:]], dim=-1)
         else:
             h = h_in
 
         input_embs = self.input_embeddings(inputs.int() + 1).view(bs, -1)
 
-        h_out = self.gru(self.dropout(input_embs), self.dropout(h))
+        h_out = self.gru(input_embs, self.dropout(h))
 
         o = self.lse.linear_hid_emb(self.dropout(h_out[:, :self.lse.hidden_size]))
         o = o.view(bs, self.latent_dim_size, self.codebook_size)

@@ -24,7 +24,6 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 actions = batch["actions"].permute(1, 0, 2).contiguous()
 
                 ss, bs, tks = tokens.shape
-                actions = torch.cat([torch.zeros(1, bs, 2), actions[:-1]], dim=0)
 
                 hid = torch.zeros(bs, cog.hidden_size)
 
@@ -54,7 +53,6 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 actions = batch["actions"].permute(1, 0, 2)
 
                 ss, bs, tks = tokens.shape
-                actions = torch.cat([torch.zeros(1, bs, 2), actions[:-1]], dim=0)
 
                 hid = torch.zeros(bs, cog.hidden_size)
 
