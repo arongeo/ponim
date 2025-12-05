@@ -53,7 +53,7 @@ class Cognition(nn.Module):
 
         h_out = self.gru(input_embs, self.dropout(h))
 
-        o = self.lse.linear_hid_emb(self.dropout(h_out[:, :self.lse.hidden_size]))
+        o = self.lse.linear_hid_emb(h_out[:, :self.lse.hidden_size])
         o = o.view(bs, self.latent_dim_size, self.codebook_size)
 
         if training:
