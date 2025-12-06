@@ -52,7 +52,7 @@ else:
     vision.train_test(vqvae, train_loader, test_loader, 10, beta=0.5)
     torch.save(vqvae.state_dict(), "vae.ptm")
 
-lse = cognition.lse.model.LSE(int(HIDDEN_SIZE * 0.75), vqvae)
+lse = cognition.lse.model.LSE(int(HIDDEN_SIZE), vqvae)
 cognition.lse.trainer.train_test(lse, train_loader, test_loader, 20)
 
 #random.shuffle(allframes)

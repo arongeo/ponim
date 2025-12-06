@@ -8,7 +8,7 @@ import vision
 device = torch.device("cpu")
 
 vqvae = vision.VQVAE(16).to(device)
-lse = cognition.lse.model.LSE(int(256 * 0.75), vqvae)
+lse = cognition.lse.model.LSE(256, vqvae)
 cog = cognition.Cognition(lse, device)
 
 if os.path.exists("vae.ptm"):
