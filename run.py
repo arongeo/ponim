@@ -46,7 +46,7 @@ mu, lv = model.vae.encoder.encode(ctx_frames.unsqueeze(1))
 print(mu.shape)
 prev_lat_frames = mu.unsqueeze(0)
 '''
-prev_lat_frame = vqvae.encode(torch.zeros(1, 1, 32, 64)).long().view(1, 1, -1)
+prev_lat_frame = vqvae.encode(torch.zeros(1, 1, 32, 64)).long()
 
 hid = torch.zeros(1, cog.hidden_size)
 
@@ -73,6 +73,7 @@ while running:
     rmt = torch.Tensor([[lmovement, rmovement]]).to(device)
     print(rmt)
     lat, hid = cog.forward(rmt, prev_lat_frame, hid)
+    prev_lat_frame = lat.clone().detach()
     framebuf = torch.round(vqvae.decode(lat).squeeze().squeeze())
 
     for i in range(32):

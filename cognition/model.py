@@ -58,9 +58,13 @@ class Cognition(nn.Module):
 
         input = torch.cat([input_embs, prev_frame], dim=-1)
 
-        h_out = self.gru(self.dropout(input), self.dropout(h_in))
+        if training:
+            h_out = self.gru(self.dropout(input), self.dropout(h_in))
+            o = self.linear_hid_token(self.dropout(h_out))
+        else:
+            h_out = self.gru(input, h_in)
+            o = self.linear_hid_token(h_out)
 
-        o = self.linear_hid_token(self.dropout(h_out))
         o = o.view(bs, self.latent_dim_size, self.codebook_size)
 
         if training:

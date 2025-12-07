@@ -13,6 +13,8 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
         for epoch in range(epochs):
             training_loss = 0
 
+            tfr = max(0.5, 1.0 - epoch / (epochs * 2))
+
             cog.train()
             for batch in training_batches:
                 #batch_loss = torch.Tensor(0).to(cog.device)
@@ -26,12 +28,20 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 ss, bs, tks = tokens.shape
 
                 hid = torch.zeros(bs, cog.hidden_size)
+                prev_tokens = tokens[0]
 
                 for s in range(ss - 1):
-                    pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
-                    #hid = hid.detach()
+                    pred_token_logits, hid = cog.forward(actions[s], prev_tokens, hid, training=True)
+
+                    if torch.rand(1).item() < tfr:
+                        with torch.no_grad():
+                            prev_tokens = torch.argmax(pred_token_logits, dim=-1)
+                    else:
+                        prev_tokens = tokens[s + 1]
+
+                    hid = hid.detach()
                     
-                    loss = cog.loss(pred_tokens, tokens[s + 1], hid)
+                    loss = cog.loss(pred_token_logits, tokens[s + 1], hid)
 
                     batch_loss += loss
                 
@@ -55,12 +65,18 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 ss, bs, tks = tokens.shape
 
                 hid = torch.zeros(bs, cog.hidden_size)
+                prev_tokens = tokens[0]
 
                 for s in range(ss - 1):
-                    pred_tokens, hid = cog.forward(actions[s], tokens[s], hid, training=True)
-                    #hid = hid.detach()
+                    pred_token_logits, hid = cog.forward(actions[s], prev_tokens, hid, training=True)
 
-                    loss = cog.loss(pred_tokens, tokens[s + 1], hid)
+                    if torch.rand(1).item() < tfr:
+                        with torch.no_grad():
+                            prev_tokens = torch.argmax(pred_token_logits, dim=-1)
+                    else:
+                        prev_tokens = tokens[s + 1]
+
+                    loss = cog.loss(pred_token_logits, tokens[s + 1], hid)
 
                     batch_loss += loss
                 
