@@ -33,7 +33,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 for s in range(ss - 1):
                     pred_token_logits, hid = cog.forward(actions[s], prev_tokens, hid, training=True)
 
-                    if torch.rand(1).item() < tfr:
+                    if tfr < torch.rand(1).item():
                         with torch.no_grad():
                             prev_tokens = torch.argmax(pred_token_logits, dim=-1)
                     else:
@@ -70,7 +70,7 @@ def train_test(cog: Cognition, vqvae: VQVAE, training_batches, testing_batches, 
                 for s in range(ss - 1):
                     pred_token_logits, hid = cog.forward(actions[s], prev_tokens, hid, training=True)
 
-                    if torch.rand(1).item() < tfr:
+                    if tfr < torch.rand(1).item():
                         with torch.no_grad():
                             prev_tokens = torch.argmax(pred_token_logits, dim=-1)
                     else:
